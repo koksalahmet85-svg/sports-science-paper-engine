@@ -1,0 +1,10 @@
+# Bulgular
+
+<!-- Sayılar elle yazılmaz; analysis/results.json'dan okunur. Örnek: -->
+```{python}
+#| output: asis
+if R.get("status") == "no-data":
+    print("*Analiz verisi henüz yok: `data/processed/dataset.csv` ekleyip `make analysis` çalıştırın.*")
+else:
+    print(f"Örneklem: n = {R['n']}.")
+```

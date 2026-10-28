@@ -1,0 +1,29 @@
+[project]
+name = "sports-science-paper-engine"
+version = "0.1.0"
+description = "Claude Code tabanlı, kaynağa dayalı spor bilimleri makale üretim hattı"
+requires-python = ">=3.11"
+dependencies = [
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Kaynak-temelli soru-cevap (PDF → atıflı yanıt)
+qa = ["paper-qa[local]>=2026.8.12"]
+# Otonom literatür / boşluk raporu
+research = ["gpt-researcher>=0.16.1", "langchain-anthropic", "langchain-huggingface"]
+# Analiz (manuscript içindeki dinamik tablolar)
+analysis = ["pandas>=2.2", "numpy", "scipy", "statsmodels", "pingouin", "matplotlib", "jupyter", "tabulate"]
+all = ["sports-science-paper-engine[qa,research,analysis]"]
+
+[project.scripts]
+sspe-search = "engine.literature.s2_search:main"
+sspe-ask = "engine.literature.ask_papers:main"
+sspe-gap = "engine.literature.gap_report:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["engine*"]

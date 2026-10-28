@@ -1,0 +1,3 @@
+# Giriş
+
+<!-- literature-scout → literature/synthesis.md üzerinden yazılır. Her iddia [@bibkey]. -->

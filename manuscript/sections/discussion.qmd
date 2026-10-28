@@ -1,0 +1,3 @@
+# Tartışma
+
+<!-- Her karşılaştırma sspe-ask çıktısına (literature/answers/) dayanır. -->

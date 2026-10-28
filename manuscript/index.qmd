@@ -1,0 +1,32 @@
+---
+title: "Başlık"
+author:
+  - name: Ahmet Köksal
+    corresponding: true
+abstract: |
+  Amaç / Yöntem / Bulgular / Sonuç (yapılandırılmış, ≤250 kelime)
+keywords: [spor analitiği, antrenman yükü]
+---
+
+```{python}
+#| label: setup
+import json, pathlib
+R = json.loads(pathlib.Path("analysis/results.json").read_text())
+```
+
+{{< include sections/introduction.qmd >}}
+
+{{< include sections/methods.qmd >}}
+
+{{< include sections/results.qmd >}}
+
+{{< include sections/discussion.qmd >}}
+
+## Yapay Zekâ Kullanım Beyanı
+
+Literatür taraması ve dil düzenlemesinde yapay zekâ araçları (Claude, paper-qa, gpt-researcher) kullanılmıştır. Tüm kaynaklar, analizler ve yorumlar yazar(lar) tarafından doğrulanmıştır; sorumluluk yazar(lar)a aittir.
+
+## Kaynaklar {.unnumbered}
+
+::: {#refs}
+:::

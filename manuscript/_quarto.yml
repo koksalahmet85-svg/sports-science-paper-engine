@@ -1,0 +1,20 @@
+project:
+  type: default
+  output-dir: _output
+
+bibliography: references.bib
+# Dergi stilini https://github.com/citation-style-language/styles adresinden indirip ekleyin, örn:
+# csl: csl/apa.csl
+link-citations: true
+execute:
+  echo: false
+  warning: false
+
+format:
+  docx:
+    number-sections: true
+  html:
+    toc: true
+    number-sections: true
+  # Dergi şablonu: `make journal J=elsevier` sonrası açın
+  # elsevier-pdf: default

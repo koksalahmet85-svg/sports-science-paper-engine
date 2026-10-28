@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+literature/pdfs/*.pdf
+literature/.pqa_cache/
+manuscript/_output/
+manuscript/.quarto/
+manuscript/*_files/
+data/raw/
+manuscript/analysis/results.json
