@@ -1,6 +1,9 @@
 project:
   type: default
   output-dir: _output
+  # sections/*.qmd yalnızca index.qmd içine dahil edilir; tek başına render edilmez
+  render:
+    - index.qmd
 
 bibliography: references.bib
 # Dergi stilini https://github.com/citation-style-language/styles adresinden indirip ekleyin, örn:
