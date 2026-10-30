@@ -1,7 +1,7 @@
 # Sports Science Paper Engine — Claude Code çalışma kuralları
 
 ## Değişmez kurallar
-1. **Kaynaksız iddia yok.** Metne giren her `[@key]` `manuscript/references.bib`'de olmalı; `make check-cites` bunu denetler. Kaynak ancak `sspe-search` ile eklenir; bellekten BibTeX yazılmaz.
+1. **Kaynaksız iddia yok.** Metne giren her `[@key]` `manuscript/references.bib`'de olmalı; `make check-cites` bunu denetler. Kaynak ancak `sspe-search` veya `sspe-doi` (DOI → yayıncı meta verisi) ile eklenir; bellekten BibTeX yazılmaz.
 2. **Elle sayı yok.** Bulgulardaki her sayı `manuscript/analysis/results.json`'dan okunur.
 3. **Ham veriye dokunma.** `data/raw/` salt okunur.
 4. **Tartışmadaki karşılaştırmalar** `sspe-ask` çıktısına (`literature/answers/`) dayanır.

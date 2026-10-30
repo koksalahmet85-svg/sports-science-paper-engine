@@ -1,31 +1,34 @@
-# Açık sorular — Q1 hakem riski haritası
+# Açık sorular — Q1 hakem riski haritası (tez metnine göre güncellendi)
 
-Tez özetine göre bir Q1 hakemin büyük olasılıkla soracağı sorular. Her birine tezden cevap (sayfa/bölüm) ya da ek analiz gerekiyor.
-Öncelik: 🔴 reddettirebilir · 🟠 major revizyon · 🟡 minor.
+Kaynak: tez tam metni (Ege Üniv., 2026, "Avrupa Ligi Basketbol Takımlarının Diziliş Rotasyonlarının Yapay Zeka Tabanlı Analizi") + Consensus taraması (`literature/consensus_report.md`).
+Durum: ✅ tezde karşılanmış · ⚠️ kısmen · ❌ açık. Öncelik: 🔴 reddettirebilir · 🟠 major · 🟡 minor.
 
-## Model ve ölçüm
-1. 🔴 **VAL40 + GBR döngüselliği.** VAL (PIR) kutu-skoru istatistiklerinin doğrusal toplamıdır. GBR'nin girdileri sayı, ribaund, asist gibi aynı bileşenleri içeriyorsa model hedefi yeniden üretir; yüksek R² bilgi taşımaz (döngüsel analiz / double dipping — Drive'daki Kriegeskorte ve ark., 2009). **Soru:** Öznitelikler neler? Hedefin bileşenleri girdilerden çıkarıldı mı? Tahmin bir sonraki sezonun VAL40'ı mı (ileriye dönük) yoksa aynı sezonunki mi?
-2. 🟠 **Dakika normalizasyonu gürültüsü.** 40 dakikaya ölçekleme az oynayan oyuncuları şişirir. **Soru:** Minimum dakika / maç eşiği var mı? Küçültme (empirical Bayes shrinkage) uygulandı mı?
-3. 🟠 **VAL'ın geçerliliği.** PIR savunma katkısını ve takım bağlamını büyük ölçüde dışarıda bırakır; hacmi ödüllendirir. Bir alternatif ölçüyle (ör. RAPM, net rating) duyarlılık analizi gerekebilir.
+## 🔴 Kritik (makaleye taşınmadan önce çözülmeli)
 
-## Kümeleme
-4. 🟠 **k = 7 gerekçesi.** Calinski–Harabasz ve Davies–Bouldin (Drive'da mevcut) iyi; ek olarak bootstrap ile küme kararlılığı (ör. Jaccard) ve sezonlar arası kararlılık bekleniyor.
-5. 🟡 **Ön işleme.** Standardizasyon, yüksek korelasyonlu değişkenler (VIF), hacim mi oran mı (per-40 / yüzde) kullanıldığı açıkça raporlanmalı.
+1. ⚠️ **VAL40 + GBR döngüselliği.** Tez bunu açıkça kabul ediyor: öznitelikler VAL40'ın aritmetik bileşenlerini içeriyor; R² = 0,949 "tahmin değil açıklayıcı ayrıştırma" olarak yorumlanıyor. Şeffaflık iyi, ama Q1 hakem "o zaman GBR aşaması neden var?" diye soracak.
+   **Öneri (birini seç):** (a) Makale A'dan GBR'yi çıkar, VAL40'ı doğrudan kullan; (b) GBR'yi **ileriye dönük** kur: t sezonunun özniteliklerinden t+1 sezonunun VAL40'ını tahmin et — bu gerçek bir tahmin görevi olur ve ILP'ye girdi olarak savunulabilir.
 
-## Dizilim analizi
-6. 🔴 **Segment tanımı ve küçük örneklem.** 67.001 segmentin çoğu birkaç hücumluk olabilir. **Soru:** Segment başarısı nasıl ölçüldü (net rating / 100 hücum)? Minimum hücum eşiği ve hücum sayısıyla ağırlıklandırma var mı?
-7. 🔴 **"Rastlantısal değil" testi.** Segmentler bağımsız değil (aynı maç, takım, oyuncu). **Soru:** Hangi test kullanıldı? Ki-kare bağımsızlık varsayımını ihlal eder. Takım-sezon yapısını koruyan permütasyon testi veya karma etkili model gerekir.
-8. 🟠 **Nedensellik dili.** "Başarılı formüllerde arketip dağılımı rastlantısal değil" ilişkiseldir. İyi takımlar hem iyi oyuncuya hem belirli bileşimlere sahip olabilir (karıştırıcı: oyuncu kalitesi, rakip gücü). Rakip ve takım kalitesine göre düzeltme önerilir.
+2. ❌ **Ki-kare özette yanlış referansla raporlanıyor.** Özetteki χ²(6) = 35,12, arketiplerin **eşit (%14,3)** dağıldığı varsayımına karşı. Arketipler zaten eşit sıklıkta değil; bu sıfır hipotezi zayıf. Gerçek oyuncu dağılımına karşı değer χ² = 27,68 (tez, Bölüm 4). Ayrıca segmentler bağımsız değil.
+   **Öneri:** Başlık bulgusu olarak gerçek dağılıma karşı testi raporla; ek olarak takım-sezon bloklarını koruyan **permütasyon testi** veya rastgele takım/sezon kesişimli karma etkili lojistik model ekle.
 
-## Optimizasyon ve Bayesgil katman
-9. 🔴 **Optimizasyoncunun laneti (optimizer's curse).** ILP, gürültülü tahminlerin en yükseklerini seçer; seçilen beşlinin beklenen değeri yukarı yanlıdır. Bayesgil küçültme bunu hafifletebilir, ama örneklem dışı doğrulama şart. **Soru:** "Optimal" beşliler sonraki maçlarda / sezonda gerçek dizilimlerle karşılaştırıldı mı?
-10. 🟠 **Bayesgil güncelleme tanımı.** Öncül ne, olabilirlik ne, neyi güncelliyor (oyuncu değeri mi, arketip-başarı olasılığı mı)? Öncül duyarlılık analizi gerekir.
-11. 🟡 **ILP global optimum savı.** Wolsey (2020) atfı doğru; ancak optimum, girdinin tahmin belirsizliği altında "optimal" değildir. Bu ayrım metinde net olmalı.
+3. ❌ **Küme kalitesi düşük: silhouette = 0,089** (K=6'da 0,115). Tez bunu "keskin sınıf değil işlevsel etiket" olarak çerçeveliyor ve GMM karşılaştırması yapmış (Tablo 10) — iyi. Ama kararlılık analizi yok.
+   **Öneri:** Bootstrap küme kararlılığı (Jaccard; [@hennig2007cluster]); sezonlar arası kararlılık; K seçimini CH + DB + kararlılık birlikte gerekçelendir. Yumuşak üyelik (GMM) zaten var — [@kalman2020lineup] ile aynı yaklaşım, karşılaştırmalı sun.
 
-## Veri
-12. 🟠 **Kesintili sezonlar.** 2019-20 COVID nedeniyle yarıda kaldı; 2020-21 seyircisizdi (ev sahibi avantajı değişti); 2021-22'de Rus kulüpleri sezon ortasında çekildi. **Soru:** Bu sezonlar nasıl ele alındı?
-13. 🟡 **Tekrarlanabilirlik.** EuroLeague API'si bu oturumda erişilebilir. Veri çekme betiği `manuscript/analysis/` altına konursa veri/kod paylaşımı beyanı güçlenir.
+4. ❌ **ILP için örneklem dışı doğrulama yok; optimizasyoncunun laneti** [@smith2006optimizer]. Optimal beşli toplam değeri (131,6–142,7) VAL40 tahminlerinin toplamı; sahadaki karşılığı sınanmamış. Tez de H4 için "gerçek maçlarda geriye dönük doğrulama yapılmamıştır" diyor.
+   **Öneri:** 2016–2022'de seç, 2023–2024'te ILP beşlilerinin (veya en yakın gözlenen beşlilerin) hücum başına net verimini gerçek rotasyonlarla karşılaştır.
 
-## Çerçeveleme
-14. 🟠 **"Transfer yatırımı" iddiası.** EuroLeague maaş/transfer verisi kamuya açık değil. Yatırım-getiri ilişkisi doğrudan ölçülmüyorsa başlık ve girişte iddia yumuşatılmalı ya da bir maliyet vekili tanımlanmalı.
-15. 🟡 **Ders kitabı atıfları.** Hastie, Géron, McKinney gibi kaynaklar tezde uygun; dergi makalesinde metodolojik iddialar birincil makale kaynaklarıyla desteklenmeli.
+## 🟠 Major
+
+5. ⚠️ **Segment gürültüsü.** Ortalama stint süresi 1,95 dk (Tablo 8). Segment düzeyi öngörü gücü r = 0,074 — tez bunu dürüstçe raporluyor.
+   **Öneri:** Hücum sayısı eşiği + ağırlıklandırma; dizilim değerini regularize et (L-RAPM, öncül olarak arketip bilgisi: [@petridis2026lineup]). Bu aynı zamanda Bayesgil katmanını güçlendirir.
+6. ⚠️ **Seçim yanlılığı.** DKR (Düşük Kullanım Rol) aşırı temsili muhtemelen "rol oyuncuları yıldızlarla birlikte oynar" seçim mekanizması — tez Bölüm 5.3'te kabul ediyor. Makalede rakip ve oyuncu kalitesine göre düzeltme ile sınanmalı.
+7. ✅ **Zamansal sızıntı.** Eğitim 2016–2022 / test 2023–2024 zamansal bölümleme var.
+8. ✅ **Dakika eşiği.** En az 10 maç ve 90 dakika filtresi var. 🟡 Ek öneri: per-40 değerlerde ampirik Bayes küçültme.
+9. ⚠️ **Kesintili sezonlar.** 2019-20 COVID kesintisi tezde not edilmiş. 2020-21 seyircisiz sezon (ev sahibi avantajı) ve 2021-22 Rus kulüplerinin çekilmesi için duyarlılık analizi eklenmeli.
+10. ⚠️ **H4 (Bayesgil güncelleme) yalnızca sentetik seri üzerinde pilot.** Makale B'de gerçek play-by-play üzerinde geriye dönük sınanmadan ana iddia yapılmamalı.
+11. 🟠 **"Transfer yatırımı" çerçevesi.** Maliyet/maaş verisi yok; giriş cümlesi motivasyon olarak kalabilir ama bulgu iddiası olmamalı.
+
+## 🟡 Minor
+12. Ders kitabı atıfları (Hastie, Géron, McKinney) dergi makalesinde birincil metodolojik kaynaklarla desteklenmeli.
+13. EuroLeague'de doğrudan önceki çalışma var: [@grassetti2020extended] (2018/19, Bayesgil RAPM, sezon içi güncelleme). "Avrupa Ligi'nde bütünleşik çalışma azdır" iddiası bu çalışmaya atıfla daraltılmalı.
+14. ILP + arketip sinerjisi ile kadro kurma: [@muniz2022sports] (JORS) — en yakın yöneylem çalışması; fark (beşli/segment düzeyi vs. kadro düzeyi) açıkça yazılmalı.

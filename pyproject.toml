@@ -20,6 +20,7 @@ all = ["sports-science-paper-engine[qa,research,analysis]"]
 sspe-search = "engine.literature.s2_search:main"
 sspe-ask = "engine.literature.ask_papers:main"
 sspe-gap = "engine.literature.gap_report:main"
+sspe-doi = "engine.literature.doi2bib:main"
 
 [build-system]
 requires = ["setuptools>=68"]

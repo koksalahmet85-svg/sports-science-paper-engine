@@ -23,6 +23,14 @@ Kaynak: tez özeti (Ahmet Köksal), Drive "Doktora Literatur" klasörü, 2026-10
 
 Hedef dergiler, SJR/JCR çeyrekleri gönderim öncesi güncel olarak doğrulanmalı.
 
+## Consensus taramasıyla eklenen en yakın çalışmalar (2026-10-30)
+- **EuroLeague'de önceki çalışma:** [@grassetti2020extended] — 2018/19 EuroLeague, Bayesgil regularize RAPM, sezon içi güncelleme. Tezin "Avrupa Ligi'nde çalışma azdır" cümlesi buna atıfla yazılmalı.
+- **Arketip + karma tam sayılı programlama ile kadro kurma:** [@muniz2022sports] (Journal of the Operational Research Society) — ILP aşamasının en yakın akrabası; fark: kadro düzeyi vs. beşli düzeyi.
+- **Pozisyondan role:** [@konca2026from], [@ibanez2025redefining], [@chen2023modeling], [@south2024basketball]
+- **Dizilim tahmini / önem ölçümü:** [@martonosi2023predicting], [@metulini2022measuring], [@ke2024unified]
+- **Yöntem:** optimizasyoncunun laneti [@smith2006optimizer]; küme kararlılığı [@hennig2007cluster]
+- Tam Consensus raporu: `literature/consensus_report.md`
+
 ## Doğrudan rakip / en yakın çalışmalar (references.bib'de)
 - Arketip ve kadro: [@penner2025player], [@kalman2020lineup], [@yamada2024offensive], [@guo2025quantifying], [@li2026impact]
 - Dizilim değerlemesi (RAPM): [@grassetti2020extended], [@petridis2026lineup], [@grassetti2026revisiting], [@watts2026dummy]
