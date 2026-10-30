@@ -29,7 +29,7 @@ TABLE = ROOT / "literature" / "evidence_table.csv"
 PDFS = ROOT / "literature" / "pdfs"
 
 
-def _get(url: str, retries: int = 6) -> dict:
+def _get(url: str, retries: int = 10) -> dict:
     headers = {"User-Agent": "sports-science-paper-engine"}
     if key := os.getenv("SEMANTIC_SCHOLAR_API_KEY"):
         headers["x-api-key"] = key
@@ -40,7 +40,7 @@ def _get(url: str, retries: int = 6) -> dict:
         except urllib.error.HTTPError as e:
             if e.code != 429 or attempt == retries - 1:
                 raise
-            time.sleep(2 ** (attempt + 1))  # anahtarsız uç nokta paylaşımlı kotada sık 429 verir
+            time.sleep(min(60, 2 ** (attempt + 1)))  # anahtarsız uç nokta paylaşımlı kotada sık 429 verir
     raise RuntimeError("unreachable")
 
 
