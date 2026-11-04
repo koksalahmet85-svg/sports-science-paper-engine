@@ -8,8 +8,12 @@ Durum: ✅ tezde karşılanmış · ⚠️ kısmen · ❌ açık. Öncelik: 🔴
 1. ⚠️ **VAL40 + GBR döngüselliği.** Tez bunu açıkça kabul ediyor: öznitelikler VAL40'ın aritmetik bileşenlerini içeriyor; R² = 0,949 "tahmin değil açıklayıcı ayrıştırma" olarak yorumlanıyor. Şeffaflık iyi, ama Q1 hakem "o zaman GBR aşaması neden var?" diye soracak.
    **Öneri (birini seç):** (a) Makale A'dan GBR'yi çıkar, VAL40'ı doğrudan kullan; (b) GBR'yi **ileriye dönük** kur: t sezonunun özniteliklerinden t+1 sezonunun VAL40'ını tahmin et — bu gerçek bir tahmin görevi olur ve ILP'ye girdi olarak savunulabilir.
 
-2. ❌ **Ki-kare özette yanlış referansla raporlanıyor.** Özetteki χ²(6) = 35,12, arketiplerin **eşit (%14,3)** dağıldığı varsayımına karşı. Arketipler zaten eşit sıklıkta değil; bu sıfır hipotezi zayıf. Gerçek oyuncu dağılımına karşı değer χ² = 27,68 (tez, Bölüm 4). Ayrıca segmentler bağımsız değil.
-   **Öneri:** Başlık bulgusu olarak gerçek dağılıma karşı testi raporla; ek olarak takım-sezon bloklarını koruyan **permütasyon testi** veya rastgele takım/sezon kesişimli karma etkili lojistik model ekle.
+2. 🔬 **Ki-kare / "rastlantısal değil" iddiası — EuroLeague API verisiyle yeniden sınandı** (rapor: `manuscript/analysis/formula_test_report.md`).
+   - Tezin formül seçim süreci aynen uygulanıp permütasyonla (takım-sezon blokları, B = 1000) sınandığında **anlamlı formül sayısı hiçbir varyantta şansla beklenenin üzerinde değil**.
+   - Naif χ² küçük p verirken permütasyon p'si büyüyor: tezdeki χ² bağımsızlık varsayımını ihlal ediyor.
+   - ≥ 2 dk dizilim-maç filtresiyle (kısa dizilimlerin "kötü gidince oyundan alınma" yanlılığı giderilince) arketip bileşimi şanstan ayrışmıyor; DKR aşırı temsili kayboluyor.
+   - **Sınırlılık:** EK-2.5 koduyla elde edilen kümeler tezdekiyle aynı değil (bkz. #16). Kesin sonuç için tezin arketip atama dosyası gerekli.
+   - **Makale için öneri:** "Başarılı formüllerde arketip dağılımı rastlantısal değildir" iddiası bu haliyle makaleye taşınmamalı. Yerine dakika/hücum ağırlıklı, rakibe göre düzeltilmiş dizilim modeli (RAPM tipi) ile arketip etkisi sınanmalı.
 
 3. ❌ **Küme kalitesi düşük: silhouette = 0,089** (K=6'da 0,115). Tez bunu "keskin sınıf değil işlevsel etiket" olarak çerçeveliyor ve GMM karşılaştırması yapmış (Tablo 10) — iyi. Ama kararlılık analizi yok.
    **Öneri:** Bootstrap küme kararlılığı (Jaccard; [@hennig2007cluster]); sezonlar arası kararlılık; K seçimini CH + DB + kararlılık birlikte gerekçelendir. Yumuşak üyelik (GMM) zaten var — [@kalman2020lineup] ile aynı yaklaşım, karşılaştırmalı sun.
@@ -32,3 +36,10 @@ Durum: ✅ tezde karşılanmış · ⚠️ kısmen · ❌ açık. Öncelik: 🔴
 12. Ders kitabı atıfları (Hastie, Géron, McKinney) dergi makalesinde birincil metodolojik kaynaklarla desteklenmeli.
 13. EuroLeague'de doğrudan önceki çalışma var: [@grassetti2020extended] (2018/19, Bayesgil RAPM, sezon içi güncelleme). "Avrupa Ligi'nde bütünleşik çalışma azdır" iddiası bu çalışmaya atıfla daraltılmalı.
 14. ILP + arketip sinerjisi ile kadro kurma: [@muniz2022sports] (JORS) — en yakın yöneylem çalışması; fark (beşli/segment düzeyi vs. kadro düzeyi) açıkça yazılmalı.
+
+## Tez metni ile EuroLeague API replikasyonu arasında bulunan yeni sorular (2026-11-04)
+16. 🔴 **Kümeler ekteki kodla yeniden üretilemiyor.** Aynı 2.014 oyuncu-sezon ve EK-2.5'teki 9 değişkenle K = 7 silhouette 0,113 (tez 0,089), K = 6'da 0,132 (tez 0,115); küme boyutları farklı. **Soru:** Kümelemede ek bir ön işleme (ör. aykırı değer kırpma, farklı USG tanımı — Tablo 3 notunda USG "maç başına", kodda "40 dakikaya") kullanıldı mı?
+17. 🔴 **"5.292 kadro dizilimi-maç gözlemi" = 2 × 2.646.** Bu, takım başına maç başına tam olarak bir dizilim demek; dizilim-maç tanımı (ör. yalnızca ilk beşler mi, en çok süre alan beşli mi?) netleşmeli.
+18. 🟠 **EK-2.7'deki kod başlangıç beşlilerini eklemiyor** (BP olayı oyuncu içermez; ilk beşler yalnızca kutu skorundaki IsStarter alanında). Tezdeki 67.001 segment sayısı bu kodun ürettiğinden (60.592) fazla, düzeltilmiş motorun ürettiğinden (80.460) az; gerçekte çalışan kod ekten farklı olmalı. Ek, çalışan kodla değiştirilmeli.
+19. 🟠 **EK-2.7'de `pts_diff=("pts_a","sum")`** yalnızca atılan sayıyı topluyor, skor farkını değil (pts_a − pts_b olmalı). Tezdeki analizde hangisinin kullanıldığı doğrulanmalı.
+20. 🟠 **NRTG tanımı tutarsız:** kısaltmalar listesinde "100 hücum başına", kodda 40 dakika başına (NRTG40). Ayrıca ağırlıksız ortalama kısa dizilimlerde ciddi negatif yanlılık üretiyor (rapordaki ağırlıksız vs dakika ağırlıklı ortalama).

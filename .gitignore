@@ -9,3 +9,4 @@ manuscript/.quarto/
 manuscript/*_files/
 data/raw/
 manuscript/analysis/results.json
+data/processed/

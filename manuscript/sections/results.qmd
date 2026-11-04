@@ -6,5 +6,5 @@
 if R.get("status") == "no-data":
     print("*Analiz verisi henüz yok: `data/processed/dataset.csv` ekleyip `make analysis` çalıştırın.*")
 else:
-    print(f"Örneklem: n = {R['n']}.")
+    print(f"Örneklem: n = {R['n']} oyuncu-sezon ({R['n_sezon']} sezon).")
 ```
