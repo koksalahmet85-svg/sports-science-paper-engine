@@ -35,9 +35,10 @@ COUNT40 = {"AST_40": "Assistances", "OREB_40": "OffensiveRebounds", "DREB_40": "
            "STL_40": "Steals", "BLK_40": "BlocksFavour", "TOV_40": "Turnovers",
            "FD_40": "FoulsReceived", "PF_40": "FoulsCommited"}
 FEATURES = ["FG3A_rate", "FT_rate", "USG_proxy", *COUNT40]
+SHOT = ["rim_rate", "paint_rate", "mid_rate", "c3_share", "fastbreak_rate", "second_chance_rate", "assisted_rate"]
 
 
-def features(ps: pd.DataFrame) -> pd.DataFrame:
+def features(ps: pd.DataFrame, extended: bool = False) -> pd.DataFrame:
     fga = ps["FieldGoalsAttempted2"] + ps["FieldGoalsAttempted3"]
     f = pd.DataFrame(index=ps.index)
     f["FG3A_rate"] = np.where(fga > 0, ps["FieldGoalsAttempted3"] / fga.where(fga > 0, 1), 0.0)
@@ -45,6 +46,9 @@ def features(ps: pd.DataFrame) -> pd.DataFrame:
     f["USG_proxy"] = ps["USG_proxy"]
     for k, col in COUNT40.items():
         f[k] = np.log1p(ps[col] / ps["MIN"] * 40)  # sağa çarpık sayım oranları
+    if extended:  # şut profili: engine/data/shot_profile.py
+        sp = pd.read_csv(PROC / "shot_profile.csv.gz")
+        f[SHOT] = ps[["Player_ID", "Season"]].merge(sp, how="left", on=["Player_ID", "Season"])[SHOT].fillna(0).values
     # sezon içi standardizasyon
     return f.groupby(ps["Season"]).transform(lambda c: (c - c.mean()) / c.std(ddof=0))
 
@@ -81,11 +85,34 @@ def main() -> None:
     ap.add_argument("--kmax", type=int, default=10)
     ap.add_argument("--fit-min", type=float, default=400, help="modeli kuran oyuncu-sezonlar için asgari dakika")
     ap.add_argument("--B", type=int, default=100, help="bootstrap tekrar sayısı")
+    ap.add_argument("--features", default="base", choices=["base", "extended"])
+    ap.add_argument("--nested", action="store_true",
+                    help="archetypes_v2.csv'deki ana rollerin her birinde alt rol taraması (K = kmin..kmax)")
     a = ap.parse_args()
     rng = np.random.default_rng(SEED)
 
     ps = pd.read_csv(PROC / "player_season.csv.gz")
-    z_all = features(ps)
+    z_all = features(ps, a.features == "extended")
+    if a.nested:
+        macro = ps[["Player_ID", "Season"]].merge(pd.read_csv(PROC / "archetypes_v2.csv"), how="left",
+                                                  on=["Player_ID", "Season"])["Arketip"].values
+        nested = {}
+        for m in sorted(set(macro)):
+            sub = (macro == m) & (ps["MIN"] >= a.fit_min).to_numpy()
+            zs = z_all[sub].to_numpy()
+            for method in ("ward", "gmm"):
+                for k in range(a.kmin, a.kmax + 1):
+                    jac = jaccard_stability(zs, k, method, a.B, rng)
+                    lab = cluster(zs, k, method)
+                    nested[f"rol{m}_{method}_K{k}"] = {
+                        "N": int(sub.sum()), "silhouette": round(float(silhouette_score(zs, lab)), 3),
+                        "jaccard_ort": round(float(np.mean(jac)), 3), "jaccard_min": round(float(np.min(jac)), 3),
+                        "en_kucuk_kume": int(np.bincount(lab).min())}
+                    print(m, method, k, nested[f"rol{m}_{method}_K{k}"], flush=True)
+        res = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
+        res[f"archetypes_v2_nested_{a.features}"] = nested
+        RESULTS.write_text(json.dumps(res, indent=2, ensure_ascii=False))
+        return
     fit = ps["MIN"] >= a.fit_min
     z = z_all[fit].to_numpy()
     early = (ps.loc[fit, "Season"] <= 2019).to_numpy()
@@ -110,7 +137,7 @@ def main() -> None:
             }
             print(method, k, scan[f"{method}_K{k}"], flush=True)
 
-    out = {"degiskenler": FEATURES, "fit_asgari_dakika": a.fit_min, "fit_N": int(fit.sum()),
+    out = {"degiskenler": FEATURES + (SHOT if a.features == "extended" else []), "fit_asgari_dakika": a.fit_min, "fit_N": int(fit.sum()),
            "toplam_N": int(len(ps)), "B": a.B, "tarama": scan}
 
     if a.K:
@@ -119,18 +146,19 @@ def main() -> None:
         assign = ((z_all.to_numpy()[:, None, :] - cent[None]) ** 2).sum(-1).argmin(1)
         assign[fit.to_numpy()] = lab
         ps["arketip_v2"] = assign + 1
-        prof = (pd.concat([z_all, ps[["arketip_v2"]]], axis=1).groupby("arketip_v2")[FEATURES].mean().round(2))
+        prof = (pd.concat([z_all, ps[["arketip_v2"]]], axis=1).groupby("arketip_v2")[list(z_all.columns)].mean().round(2))
         raw = ps.groupby("arketip_v2").agg(n=("Player_ID", "size"), VAL40=("VAL40", "mean"),
                                            MIN=("MIN", "mean"), eFG=("eFG", "mean")).round(2)
         out["nihai"] = {"yontem": a.method, "K": a.K, "profil_z": prof.to_dict(orient="index"),
                         "ozet": raw.to_dict(orient="index"),
                         "jaccard_kume": jaccard_stability(z, a.K, a.method, a.B, rng)}
         ps[["Player_ID", "Player", "Season", "Team", "MIN", "VAL40", "arketip_v2"]].rename(
-            columns={"arketip_v2": "Arketip"}).to_csv(PROC / "archetypes_v2.csv", index=False)
+            columns={"arketip_v2": "Arketip"}).to_csv(
+            PROC / ("archetypes_v2.csv" if a.features == "base" else "archetypes_v2_extended.csv"), index=False)
         print(prof, "\n", raw)
 
     res = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
-    res["archetypes_v2"] = out
+    res["archetypes_v2" if a.features == "base" else "archetypes_v2_extended"] = out
     RESULTS.write_text(json.dumps(res, indent=2, ensure_ascii=False))
 
 

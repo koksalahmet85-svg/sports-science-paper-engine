@@ -1,4 +1,4 @@
-"""EuroLeague resmî API'sinden ham veri: maç listesi, kutu skoru, play-by-play.
+"""EuroLeague resmî API'sinden ham veri: maç listesi, kutu skoru, play-by-play, şut koordinatları.
 
 Tezle aynı kapsam: E2016–E2024 (9 sezon, 2016-17 → 2024-25). Her maç için yanıt
 olduğu gibi data/raw/euroleague/<sezon>/ altına gzip'li JSON olarak yazılır; inen
@@ -27,6 +27,7 @@ RESULTS = "https://api-live.euroleague.net/v1/results?seasonCode={season}"
 ENDPOINTS = {
     "box": "https://live.euroleague.net/api/Boxscore?gamecode={game}&seasoncode={season}",
     "pbp": "https://live.euroleague.net/api/PlaybyPlay?gamecode={game}&seasoncode={season}",
+    "pts": "https://live.euroleague.net/api/Points?gamecode={game}&seasoncode={season}",  # şut koordinatları
 }
 
 

@@ -40,3 +40,21 @@ dizilim düzeyinde sınanabilir bir hipotez verir (Makale A).
 - Bianchi, Facchinetti ve Zuccolotto (2017), "Role revolution: towards a new meaning of positions in basketball",
   *Electronic Journal of Applied Statistical Analysis* — SOM + bulanık kümeleme ile 5 rol. Crossref'te kaydı bulunamadı;
   DOI dergi sitesinden elle doğrulanmadan `references.bib`'e eklenmemeli.
+
+## 5. Ek istatistiklerle ikinci düzey: 4 ana rol → 6 alt rol (2026-11-09)
+Şut koordinatları (pota mesafesi, köşe üçlüğü), hızlı hücum / ikinci şans payı ve asistli isabet payı eklendi
+(`engine/data/shot_profile.py`; 325.151 saha içi atış). Sonuçlar (`archetypes_v2.py`, bootstrap Jaccard):
+- Tek düzeyde K artırıldığında kararlılık yine düşüyor (GMM K = 4 ≈ 0,73; K = 5 ≈ 0,62; K = 7 ≈ 0,51) — ek
+  istatistikler 7 düz kümeyi kararlı hale getirmiyor.
+- İç içe (ana rol içinde) bölünmede iki anlamlı alt rol çıkıyor (`archetypes_hier.py`):
+
+| Ana rol | Alt rol | Profil | Örnek | Kararlılık | Literatür |
+|---|---|---|---|---|---|
+| Çok Yönlü Forvet | İç Saha Forveti | Yüksek kullanım, boyalı alan/pota şutu, hücum ribaundu, serbest atış | Mirotić, Shengelia, Clyburn | ≈ 0,77 (kararlı) | "Bigs who Cut to the Rim" [@chen2023modeling]; "Versatile Big" [@wei2025enhancing] |
+| Çok Yönlü Forvet | Stretch Forvet | Köşe üçlüğü, asistli isabet, düşük top kaybı | Vezenkov, Leday, Hernangómez | ≈ 0,77 (kararlı) | "Spot-up Wings" [@chen2023modeling] |
+| Oyun Yöneticisi | Organizatör Oyun Kurucu | Önce pas, daha düşük kullanım | Calathes, Satoranský, Walkup | ≈ 0,70 (sınırda) | "Core Ball Handler" [@wei2025enhancing] |
+| Oyun Yöneticisi | Yaratıcı Skorer | Çok yüksek kullanım, asistsiz şut, orta mesafe, kazanılan faul | Larkin, Mike James, Mičić | ≈ 0,70 (sınırda) | "Ball Dominant Scorer" [@wei2025enhancing] |
+
+Not: [@wei2025enhancing] (CBA) Core Ball Handler'ın takım arkadaşlarının çoğunun performansını artırdığını, Ball Dominant
+Scorer'ın ise diğer rollere olumsuz etkisini bildiriyor — EuroLeague'de bu iki alt rolün dizilim etkisi sınanabilir
+bir hipotez. Öneri: doğrulayıcı analizler 4 ana rolle, betimsel/keşifsel analizler 6 alt rolle.
