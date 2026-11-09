@@ -9,8 +9,8 @@ VARIANTS = [("corrected", 0), ("corrected", 2), ("thesis", 0), ("thesis", 2)]
 LABEL = {"corrected": "Düzeltilmiş (başlangıç beşlileri kutu skorundan)", "thesis": "Tez EK-2.7 kodu (başlangıç beşlisi yok)"}
 
 
-def row(mode, m):
-    d = R[f"formula_test_{mode}_min{m:g}"]
+def row(mode, m, tag=""):
+    d = R[f"formula_test_{mode}_min{m:g}{tag}"]
     p = d["permutasyon"]
     return (f"| {LABEL[mode]} | {'yok' if m == 0 else f'≥ {m:g} dk'} | {d['dizilim_mac_N']:,} | "
             f"{d['test_edilen_formul']} | {d['anlamli_formul']} ({d['anlamli_formul_pozitif']} pozitif) | "
@@ -18,6 +18,9 @@ def row(mode, m):
             f"{d['chi2']} | {d['chi2_p_naif']:.2g} | {p['chi2_p']} | {d['DKR_payi']} | {p['DKR_payi_p']} |")
 
 
+HEADER = ["| Segment modu | Dizilim-maç süresi | Dizilim-maç N | Test edilen formül | Anlamlı formül | Şansla beklenen anlamlı (perm. ort.) "
+          "| p (anlamlı formül sayısı) | BH-FDR sonrası | χ² | p naif | p permütasyon | DKR payı | p (DKR) |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
 main = R["formula_test_corrected_min0"]
 cl = main["kumeleme"]
 lines = [
@@ -28,14 +31,20 @@ lines = [
     "Yöntem: `manuscript/analysis/archetype_formulas.py`. Tezin formül seçim süreci (N ≥ 10, tek örneklem t, p < ,05) "
     f"aynen uygulanır; ardından NRTG40 takım-sezon blokları içinde karıştırılarak süreç {main['permutasyon']['B']} kez tekrarlanır.",
     "",
-    "| Segment modu | Dizilim-maç süresi | Dizilim-maç N | Test edilen formül | Anlamlı formül | Şansla beklenen anlamlı (perm. ort.) "
-    "| p (anlamlı formül sayısı) | BH-FDR sonrası | χ² | p naif | p permütasyon | DKR payı | p (DKR) |",
-    "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    "",
+    "## A. Tezin kendi arketipleriyle (birebir yeniden üretim: `thesis_archetypes.py`) — ana sonuç",
+    "",
+    *HEADER,
+    *[row(mo, m, "_tezarketip") for mo, m in VARIANTS],
+    "",
+    "## B. Yaklaşık arketiplerle (tez EK-2.5 basılı kodu) — duyarlılık",
+    "",
+    *HEADER,
     *[row(mo, m) for mo, m in VARIANTS],
     "",
     "## Okuma",
-    "- **Anlamlı formül sayısı hiçbir varyantta şansla beklenenin üzerinde değil** (permütasyon p sütunu). "
-    "Yani \"anlamlı formüller\" kümesinin kendisi büyük ölçüde rastlantısal gürültüyle uyumlu.",
+    "- **Anlamlı formül sayısı, kısa dizilim yanlılığı giderildiğinde (≥ 2 dk) şansla beklenenin üzerinde değil** "
+    "(permütasyon p sütunu). Filtresiz varyantta fazlalık var, ancak o formüllerin neredeyse tamamı negatif.",
     "- **Naif χ² ile permütasyon p'si arasındaki fark**, tezdeki χ² testinin bağımsızlık varsayımını (aynı formüldeki "
     "5 gözlem, formül seçimi, çoklu test) ihlal ettiğini sayısal olarak gösterir.",
     "- **Süre filtresi kritik.** Filtre yokken anlamlı formüllerin neredeyse tamamı negatif: kısa dizilimler kötü "
@@ -43,12 +52,16 @@ lines = [
     f"{main['NRTG40_ort_dakika_agirlikli']}). ≥ 2 dk filtresiyle bu yapay etki kalkar ve arketip bileşimi şanstan ayrışmaz.",
     "- **Filtresiz varyantta BH-FDR'den çok formülün geçmesi gerçek etki değildir:** ağırlıksız NRTG40'ın genel ortalaması "
     "sıfırdan uzak olduğu için H0: μ = 0 yanlış referanstır; permütasyon altında da benzer sayıda \"anlamlı\" formül çıkar.",
-    "- **DKR aşırı temsili** yalnızca tez EK-2.7 kodu + filtresiz varyantta permütasyon altında anlamlı; sağlam varyantlarda kaybolur.",
+    "- **DKR aşırı temsili (tablo A):** filtresiz varyantta permütasyon altında da anlamlı, ancak anlamlı formüllerin neredeyse "
+    "tamamı NEGATİF. Yani DKR, başarılı değil kısa süre sahada kalıp kaybeden dizilimlerde fazla. ≥ 2 dk filtresiyle (anlamlı "
+    "formüllerin çoğu pozitif) arketip bileşimi şanstan ayrışmıyor. Tezdeki \"başarılı formüllerde DKR aşırı temsili\" bulgusu "
+    "bu veriyle desteklenmiyor.",
     "",
-    "## Sınırlılık: kümeler tezle aynı değil",
-    f"Aynı 2.014 gözlem ve EK-2.5'teki 9 değişkenle K = 7 silhouette = {cl['silhouette_K7']} (tez: 0,089); küme boyutları "
-    f"{cl['boyutlar']} (tez: {cl['tez_boyutlar']}). Arketipler tez Tablo 3 profillerine en yakın eşleşmeyle adlandırıldı. "
-    "Kesin sonuç için tezin kendi arketip atamaları (`oyuncu_sezon_arketip.csv`) gerekir; betik o dosyayla çalıştırılabilir: `python manuscript/analysis/archetype_formulas.py --arketip-dosyasi oyuncu_sezon_arketip.csv`.",
+    "## Kümelerin yeniden üretimi",
+    "Tezin gerçek kodu (EK KOD 1–2) ile tez arketipleri birebir üretildi (K1–K7 = 456, 74, 237, 192, 514, 196, 345; silhouette 0,089). "
+    f"Basılı EK-2.5 kodu ise farklı bir çözüm veriyor (silhouette {cl['silhouette_K7']}, boyutlar {cl['boyutlar']}): USG tanımı "
+    "(maç başına / 40 dk), 0/0 oranların doldurulması (ortalama / 0) ve satır sırası gibi küçük farklar küme yapısını değiştiriyor. "
+    "Bu, Ward K = 7 çözümünün kararsızlığının bir başka göstergesi (bkz. `archetypes_v2.py` bootstrap Jaccard).",
 ]
 (HERE / "formula_test_report.md").write_text("\n".join(lines) + "\n")
 print("→ manuscript/analysis/formula_test_report.md")
