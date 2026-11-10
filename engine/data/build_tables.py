@@ -111,8 +111,9 @@ def _events(pbp: dict) -> list[dict]:
     return out
 
 
-POSS_EVENTS = {"2FGA": "fga", "2FGM": "fga", "3FGA": "fga", "3FGM": "fga", "FTA": "fta", "FTM": "fta",
-               "O": "oreb", "TO": "tov"}
+# Segment başına her iki takım için sayılan olaylar (FGA/FTA kodları kaçan atıştır; FV = blok yapan, AG = bloklanan)
+# Op/Dp: yalnızca oyuncuya yazılmış ribaundlar (takım ribaundu hariç; ribaund yüzdelerinin paydası için)
+TALLY = ["2FGM", "2FGA", "3FGM", "3FGA", "FTM", "FTA", "O", "D", "Op", "Dp", "TO", "AS", "ST", "FV", "AG", "CM", "RV"]
 
 
 def stints(mode: str) -> pd.DataFrame:
@@ -130,7 +131,7 @@ def stints(mode: str) -> pd.DataFrame:
         t0, score, last = 0.0, {"A": 0, "B": 0}, {"A": 0, "B": 0}
 
         def reset():
-            return {s: {"fga": 0, "fta": 0, "oreb": 0, "tov": 0} for s in "AB"}
+            return {s: dict.fromkeys(TALLY, 0) for s in "AB"}
 
         tally, t_end = reset(), 0.0
 
@@ -143,7 +144,9 @@ def stints(mode: str) -> pd.DataFrame:
                 rec[f"team_{s}"] = code[s]
                 rec[f"pts_{s}"] = score[s] - last[s]
                 c = tally[s]
-                rec[f"poss_{s}"] = c["fga"] + 0.44 * c["fta"] - c["oreb"] + c["tov"]
+                fga = c["2FGM"] + c["2FGA"] + c["3FGM"] + c["3FGA"]
+                rec[f"poss_{s}"] = fga + 0.44 * (c["FTM"] + c["FTA"]) - c["O"] + c["TO"]
+                rec.update({f"n_{k}_{s}": v for k, v in c.items()})
             rows.append(rec)
             t0, last, tally = t, dict(score), reset()
 
@@ -153,8 +156,10 @@ def stints(mode: str) -> pd.DataFrame:
                 if e[f"POINTS_{s_}"] is not None:
                     score[s_] = int(e[f"POINTS_{s_}"])
             side = side_of.get((e["CODETEAM"] or "").strip())
-            if side and e["PLAYTYPE"] in POSS_EVENTS:
-                tally[side][POSS_EVENTS[e["PLAYTYPE"]]] += 1
+            if side and e["PLAYTYPE"] in tally[side]:
+                tally[side][e["PLAYTYPE"]] += 1
+                if e["PLAYTYPE"] in ("O", "D") and (e["PLAYER_ID"] or "").strip():
+                    tally[side][e["PLAYTYPE"] + "p"] += 1
             if t is not None:
                 t_end = max(t_end, t)
             if e["PLAYTYPE"] not in ("IN", "OUT") or side is None or t is None:

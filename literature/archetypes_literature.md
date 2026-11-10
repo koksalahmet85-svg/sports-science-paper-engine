@@ -58,3 +58,18 @@ dizilim düzeyinde sınanabilir bir hipotez verir (Makale A).
 Not: [@wei2025enhancing] (CBA) Core Ball Handler'ın takım arkadaşlarının çoğunun performansını artırdığını, Ball Dominant
 Scorer'ın ise diğer rollere olumsuz etkisini bildiriyor — EuroLeague'de bu iki alt rolün dizilim etkisi sınanabilir
 bir hipotez. Öneri: doğrulayıcı analizler 4 ana rolle, betimsel/keşifsel analizler 6 alt rolle.
+
+## 6. İleri istatistiklerle doğrulama (2026-11-10)
+`engine/data/advanced.py`: USG%, AST%, ORB%, DRB%, STL%, BLK%, TOV%, 3PAr, FTr, FD%, PF% — paydalar, play-by-play'den
+kurulan beşlilerde oyuncu sahadayken GERÇEK takım/rakip toplamları (Basketball-Reference'ın sezon toplamı tahmini yerine).
+Doğrulama: PBP sayımları kutu skoruyla %97–99,8 birebir; sahada dakika / kutu dakikası medyanı 0,998.
+- Üç bağımsız değişken setinde (kutu skoru, şut profili, ileri istatistik) kararlı çözüm aynı: GMM K = 4
+  (Jaccard ≈ 0,73–0,77); K ≥ 5'te kararlılık düşüyor. Rol yapısı değişken seçimine dayanıklı.
+- Temel ve ileri K = 4 çözümleri aynı dört rolü eşliyor (çapraz tablo), ama sınırdaki oyuncuların ~%25'i rol
+  değiştiriyor (ARI ≈ 0,49).
+- İleri istatistiklerle hiçbir alt rol kararlılık eşiğini geçmiyor; Çok Yönlü Forvet bölünmesi en yakın (≈ 0,72).
+
+**VAL40'ın rol yanlılığı** (`role_value_summary.py`, results.json["role_value"]): rol, VAL40 varyansının ~%24'ünü,
+sahadaki etkinin (On−Off net rating) ise yalnızca ~%1'ini açıklıyor. Kutu skoru bileşik endeksleri uzun oyuncuları
+(ribaund, blok, yüksek isabet) sistematik olarak öne çıkarıyor. → ILP'nin amaç fonksiyonunda ham VAL40 yerine rol içi
+standartlaştırılmış değer ya da etki tabanlı (RAPM tipi) değer kullanılmalı.
