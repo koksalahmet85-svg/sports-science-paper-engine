@@ -73,3 +73,14 @@ Doğrulama: PBP sayımları kutu skoruyla %97–99,8 birebir; sahada dakika / ku
 sahadaki etkinin (On−Off net rating) ise yalnızca ~%1'ini açıklıyor. Kutu skoru bileşik endeksleri uzun oyuncuları
 (ribaund, blok, yüksek isabet) sistematik olarak öne çıkarıyor. → ILP'nin amaç fonksiyonunda ham VAL40 yerine rol içi
 standartlaştırılmış değer ya da etki tabanlı (RAPM tipi) değer kullanılmalı.
+
+## 7. Boy ve resmî pozisyon (2026-11-11)
+`engine/data/bio.py` (EuroLeague API: boy, kilo, doğum tarihi, Guard/Forward/Center), `role_position.py`,
+`archetypes_v2.py --features advanced_height`.
+- Boy eklenince de en kararlı çözüm K = 4 (Jaccard ≈ 0,68); K = 5 ona en çok yaklaşan çözüm (≈ 0,65) ve yorumlanabilir:
+  Top Taşıyıcı (≈ 0,76), Boyalı Alan Koruyucusu (≈ 0,83), Kanat Şutör (≈ 0,61), Stretch Forvet (≈ 0,56),
+  İç Saha Forveti (≈ 0,42 — kararsız). İlk iki rol sağlam; aradaki üç rolün sınırları bulanık.
+- **Pozisyon-ötesi savı kısmen destekleniyor:** rol–pozisyon ilişkisi güçlü (Cramér V ≈ 0,68–0,72). Uç roller pozisyona
+  bağlı (Top Taşıyıcı'nın ~%96'sı Guard, Boyalı Alan Koruyucusu'nun ~%90'ı Center); ara roller pozisyonları kesiyor
+  (Kenar Şutörü ~%57 Forward / %39 Guard; Çok Yönlü Forvet ~%61 Forward / %32 Center). Makalede "pozisyon-ötesi yapı"
+  iddiası "kanat ve forvet rollerinde pozisyon-ötesi; oyun kurucu ve pivot rollerinde değil" biçiminde daraltılmalı.

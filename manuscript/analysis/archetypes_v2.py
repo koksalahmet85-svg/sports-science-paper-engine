@@ -42,13 +42,17 @@ ADV = ["3PAr", "FTr", "USG_pct", "AST_pct", "ORB_pct", "DRB_pct", "STL_pct", "BL
 SQRT = ["AST_pct", "ORB_pct", "STL_pct", "BLK_pct"]  # sağa çarpık paylar
 
 
-def features(ps: pd.DataFrame, extended: bool = False, advanced: bool = False) -> pd.DataFrame:
+def features(ps: pd.DataFrame, extended: bool = False, advanced: bool = False, height: bool = False) -> pd.DataFrame:
     if advanced:  # ileri istatistikler (gerçek sahada paydalar; engine/data/advanced.py) + şut profili
         key = ps[["Player_ID", "Season"]]
         adv = key.merge(pd.read_csv(PROC / "advanced.csv.gz"), how="left", on=["Player_ID", "Season"])
         sp = key.merge(pd.read_csv(PROC / "shot_profile.csv.gz"), how="left", on=["Player_ID", "Season"])
         f = pd.concat([adv[ADV], sp[SHOT]], axis=1).fillna(0)
         f.index = ps.index
+        if height:  # boy (engine/data/bio.py); eksikler resmî pozisyonun ortalamasıyla doldurulur
+            bio = key.merge(pd.read_csv(PROC / "bio.csv.gz"), how="left", on=["Player_ID", "Season"])
+            h = bio["height_cm"].fillna(bio.groupby("position")["height_cm"].transform("mean"))
+            f["height_cm"] = h.fillna(h.mean()).values
         f[SQRT] = np.sqrt(f[SQRT].clip(lower=0))
         return f.groupby(ps["Season"]).transform(lambda c: (c - c.mean()) / c.std(ddof=0))
     fga = ps["FieldGoalsAttempted2"] + ps["FieldGoalsAttempted3"]
@@ -97,7 +101,7 @@ def main() -> None:
     ap.add_argument("--kmax", type=int, default=10)
     ap.add_argument("--fit-min", type=float, default=400, help="modeli kuran oyuncu-sezonlar için asgari dakika")
     ap.add_argument("--B", type=int, default=100, help="bootstrap tekrar sayısı")
-    ap.add_argument("--features", default="base", choices=["base", "extended", "advanced"])
+    ap.add_argument("--features", default="base", choices=["base", "extended", "advanced", "advanced_height"])
     ap.add_argument("--macro-file", default="archetypes_v2.csv", help="--nested için ana rol dosyası (data/processed)")
     ap.add_argument("--nested", action="store_true",
                     help="archetypes_v2.csv'deki ana rollerin her birinde alt rol taraması (K = kmin..kmax)")
@@ -105,7 +109,7 @@ def main() -> None:
     rng = np.random.default_rng(SEED)
 
     ps = pd.read_csv(PROC / "player_season.csv.gz")
-    z_all = features(ps, a.features == "extended", a.features == "advanced")
+    z_all = features(ps, a.features == "extended", a.features.startswith("advanced"), a.features == "advanced_height")
     if a.nested:
         macro = ps[["Player_ID", "Season"]].merge(pd.read_csv(PROC / a.macro_file), how="left",
                                                   on=["Player_ID", "Season"])["Arketip"].values
