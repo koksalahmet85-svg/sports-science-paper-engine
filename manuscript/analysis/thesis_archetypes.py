@@ -22,7 +22,8 @@ PROC = ROOT / "data" / "processed"
 DEG = ["PTS40", "TRB40", "AST40", "STL40", "BLK40", "USG", "FG3%", "FT%", "eFG%"]
 
 
-def main() -> None:
+def build():
+    """Tez örneklemi ve z-skor matrisi (kararlılık analizi için de kullanılır)."""
     p = pd.read_csv(PROC / "player_game.csv.gz").rename(columns={"Player_ID": "PID"})
     agg = p.groupby(["Season", "PID", "Player"]).agg(
         G=("Gamecode", "nunique"), Min=("MIN", "sum"), PTS=("Points", "sum"),
@@ -39,7 +40,11 @@ def main() -> None:
     agg["FG3%"] = np.where(agg["FG3A"] > 0, agg["FG3M"] / agg["FG3A"].where(agg["FG3A"] > 0, 1), np.nan)
     agg["FT%"] = np.where(agg["FTA"] > 0, agg["FTM"] / agg["FTA"].where(agg["FTA"] > 0, 1), np.nan)
     f = agg[(agg["G"] >= 10) & (agg["Min"] >= 90)].copy().round(4)
-    z = StandardScaler().fit_transform(f[DEG].fillna(f[DEG].mean()))
+    return f, StandardScaler().fit_transform(f[DEG].fillna(f[DEG].mean()))
+
+
+def main() -> None:
+    f, z = build()
     f["Arketip"] = fcluster(linkage(z, method="ward", metric="euclidean"), 7, criterion="maxclust")
     print(f"N = {len(f)} | boyutlar {np.bincount(f['Arketip'])[1:].tolist()} | "
           f"silhouette {silhouette_score(z, f['Arketip']):.3f}")

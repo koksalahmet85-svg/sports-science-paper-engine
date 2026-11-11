@@ -1,3 +1,31 @@
-# Yöntem
+# Methods
 
-<!-- methodologist yazar. Raporlama kılavuzu: manuscript/checklists/ -->
+## Design and data
+
+This observational study used all EuroLeague games played from the 2016–17 to the 2024–25 season (`{python} A["seasons"]` seasons, `{python} n(A["games"])` games). Official box scores, play-by-play logs, shot coordinates and the player registry (height, registered position) were retrieved from the public EuroLeague application programming interface. The data comprised `{python} n(A["player_games"])` player-game records, `{python} n(A["shots"])` field-goal attempts with coordinates and `{python} n(A["assist_edges"])` assisted field goals with identified passer and scorer. Only publicly available performance data were used; no ethical approval was required.
+
+Player-seasons were included when the player was on the roster for at least 10 games and played at least 90 minutes in the season, giving `{python} n(A["player_seasons"])` player-seasons from `{python} A["players"]` players.
+
+## Lineup segments
+
+Five-on-five lineup segments (stints) were reconstructed from the play-by-play substitution events, with starting lineups taken from the box score. A new segment started at every substitution by either team. Segments in which both teams had exactly five identified players covered `{python} pct(A["stint_minutes_covered"])` of playing time (`{python} n(A["stints"])` segments of at least 10 s). Possessions were estimated per segment as field-goal attempts + 0.44 × free-throw attempts − offensive rebounds + turnovers [@kubatko2007starting].
+
+## Role variables
+
+Variables were chosen to describe what a player does rather than how well he does it; shooting efficiency and composite valuation indices were deliberately excluded so that roles would not be confounded with quality. Four groups of variables were used (`{python} len(V5["degiskenler"])` in total). (1) Possession shares: usage, assist, offensive and defensive rebound, steal, block, turnover and foul rates, three-point attempt rate and free-throw rate. Denominators were the actual team and opponent totals accumulated while the player was on court, obtained from the lineup segments, rather than season-level estimates. (2) Shot profile: proportions of attempts at the rim, in the paint and from mid-range, corner share of three-point attempts, fast-break and second-chance shares, and the proportion of made field goals that were assisted. (3) Assist network: assists relative to assists plus made field goals, shares of a player's assists leading to three-pointers, to shots within 3 m and to registered centres, diversity of assist recipients, proportions of made two- and three-pointers that were assisted, and share of received assists coming from guards. (4) Height. Right-skewed shares were square-root transformed and all variables were standardised within season to remove league-wide trends.
+
+## Clustering and choice of the number of roles
+
+Roles were derived with Gaussian mixture models with full covariance matrices [@scrucca2016mclust], fitted on player-seasons with at least 400 minutes (n = `{python} n(V5["fit_N"])`); remaining player-seasons were assigned to the nearest cluster centroid. Ward hierarchical clustering was run for comparison. For 4 to 8 clusters we computed the silhouette coefficient and the bootstrap stability of each cluster as the mean maximum Jaccard similarity between the original cluster and the clusters obtained in bootstrap resamples [@hennig2007cluster]; values above 0.75 indicate stable clusters and values below 0.5 dissolved clusters. Stability over time was assessed by fitting the model on 2016–2019 and comparing its assignments for 2020–2024 with a model fitted on 2020–2024 (adjusted Rand index). Robustness to variable selection was examined by repeating the analysis with subsets of the variable groups. The seven-cluster Ward solution used in earlier work on the same data was reproduced and subjected to the same bootstrap.
+
+## Roles and registered positions
+
+The association between roles and registered positions (guard, forward, centre) was quantified with Cramér's V and with the share of each role belonging to its most frequent position.
+
+## Roles and lineup performance
+
+Individual quality was estimated with regularised adjusted plus-minus (RAPM): ridge regression of segment net rating (points per 100 possessions, home minus away) on indicators for the ten players on court, weighted by possessions [@grassetti2020extended; @petridis2026lineup]. Players with fewer than 300 possessions shared one replacement-level coefficient. The penalty was chosen by five-fold cross-validation grouped by game.
+
+To test whether role composition adds information, the RAPM model was fitted on 2016–2022 and its residuals were regressed (ridge) on the difference between teams in the number of players in each role and in all pairwise role products. The gain in possession-weighted R² over RAPM alone was evaluated on 2023–2024 segments. Its null distribution was obtained by permuting role labels among player-seasons within season (`{python} M5["rol_bilesimi"]["B"]` permutations), which preserves player quality and lineup structure while destroying role information.
+
+As a sensitivity analysis, we repeated a previously used procedure — selecting role combinations whose mean lineup net rating differed from zero (one-sample *t* test, *p* < .05, at least 10 observations) and testing the role distribution among them with a chi-square test — and compared the naive result with a permutation test that shuffled net ratings within team-season blocks, with and without a minimum lineup duration of 2 minutes.

@@ -1,3 +1,19 @@
-# Tartışma
+# Discussion
 
-<!-- Her karşılaştırma sspe-ask çıktısına (literature/answers/) dayanır. -->
+This study derived functional player roles for nine EuroLeague seasons from open data and found that five roles — ball handler, wing, stretch forward, interior forward and rim protector — were reproducible under resampling and across periods, whereas finer partitions were not. The roles overlapped with registered positions at the two ends of the positional spectrum but cut across positions in between, and the role composition of a lineup did not explain its performance once the individual quality of its players was taken into account.
+
+The roles correspond to those most often reported in the literature: the systematic review by Coma Ribes et al. lists floor generals, shooters, versatile players and paint protectors among its recurrent roles [@ribes2026identifying], and studies using play-type data distinguish ball handlers, spot-up wings and several types of bigs [@chen2023modeling; @wei2025enhancing]. The number of roles reported elsewhere ranges widely, from three in the women's EuroLeague [@pendolareinecke2025exploring] to nine [@ibanez2025redefining] and more than a dozen with play-type data [@chen2023modeling; @wei2025enhancing]. Our results suggest that, with box-score, shot-location and assist-network information, partitions finer than five roles are not stable; the instability of a seven-cluster solution on the same data illustrates that internal validity indices alone do not guarantee a reproducible partition. Finer distinctions may require play-type or tracking information that was not available here.
+
+The claim that modern basketball is "positionless" was only partly supported. Ball handlers and rim protectors remained tied to the guard and centre positions, whereas wings and forwards were functionally interchangeable across registered positions. Positionless play in the EuroLeague therefore appears to be a property of the middle of the positional spectrum rather than of the game as a whole.
+
+Role composition did not improve the prediction of lineup net rating beyond RAPM, with either five or four roles. Earlier reports of role-combination effects [@kalman2020lineup; @chen2023modeling; @wei2025enhancing] were not controlled for individual quality in this way, and our sensitivity analysis shows how such effects can arise: when very short lineups are included, lineups that concede runs are substituted quickly and enter the analysis with strongly negative net ratings, and selecting "significant" combinations followed by a chi-square test then indicates a non-random role distribution that disappears under a permutation test and a minimum-duration filter. The practical implication is that a good lineup is, to a first approximation, a lineup of good players. This does not exclude small synergy effects, which the noise in segment-level outcomes would make hard to detect.
+
+The box-score valuation index was strongly role-dependent, favouring rim protectors and interior forwards, whereas RAPM was not, and RAPM predicted future lineup outcomes considerably better. Indices of this type should therefore not be used to compare players across roles.
+
+## Limitations
+
+Segment-level net rating is very noisy and the explained variance was small in absolute terms for all models; only pairwise role interactions were tested. Defensive behaviour was represented only by steals, blocks, rebounds and fouls. Role labels were derived from full-season statistics. The wing role was only moderately stable and should be interpreted with caution. Findings are specific to the EuroLeague.
+
+## Conclusions
+
+Five functional roles describe EuroLeague players reproducibly from open data. Roles cut across registered positions for wings and forwards but not for ball handlers and rim protectors. Role composition adds little to the explanation of lineup performance beyond individual player quality, and box-score valuation indices are biased by role.

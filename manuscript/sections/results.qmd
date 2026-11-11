@@ -1,10 +1,42 @@
-# Bulgular
+# Results
 
-<!-- Sayılar elle yazılmaz; analysis/results.json'dan okunur. Örnek: -->
+## Number and stability of roles
+
+Bootstrap stability was highest for four and five roles and declined for more (@tbl-stab). With the full variable set, the five-role solution was about as stable as the four-role solution (@tbl-stab) and agreed better across periods (adjusted Rand index `{python} SCAN["gmm_K5"]["donemler_arasi_ARI"]` vs `{python} SCAN["gmm_K4"]["donemler_arasi_ARI"]`). The previously used seven-cluster Ward solution was not stable (mean Jaccard `{python} A["thesis_ward7_jaccard_mean"]`, minimum `{python} A["thesis_ward7_jaccard_min"]`).
+
 ```{python}
-#| output: asis
-if R.get("status") == "no-data":
-    print("*Analiz verisi henüz yok: `data/processed/dataset.csv` ekleyip `make analysis` çalıştırın.*")
-else:
-    print(f"Örneklem: n = {R['n']} oyuncu-sezon ({R['n_sezon']} sezon).")
+#| label: tbl-stab
+#| tbl-cap: "Cluster validity by number of roles (Gaussian mixture model, full variable set)."
+rows = [{"Roles": k, "Silhouette": SCAN[f"gmm_K{k}"]["silhouette"], "Mean Jaccard": SCAN[f"gmm_K{k}"]["jaccard_ort"],
+         "Minimum Jaccard": SCAN[f"gmm_K{k}"]["jaccard_min"], "Cross-period ARI": SCAN[f"gmm_K{k}"]["donemler_arasi_ARI"]}
+        for k in range(4, 9)]
+pd.DataFrame(rows).style.hide(axis="index").format(precision=2)
 ```
+
+## The five roles
+
+The five roles are summarised in @tbl-roles. Ball handlers and rim protectors were the most stable roles; the wing role was the least stable.
+
+```{python}
+#| label: tbl-roles
+#| tbl-cap: "Functional roles: size, stability, height, registered position, box-score valuation (VAL40) and RAPM."
+t = []
+for k, name in ROLE.items():
+    pos = POS["tablo"][k]; tot = sum(pos.values())
+    t.append({"Role": name, "Player-seasons": FIN["ozet"][k]["n"], "Jaccard": FIN["jaccard_kume"][int(k) - 1],
+              "Height (cm)": POS["ortalama_boy"][k], "Guard": pct(pos["Guard"] / tot, 0), "Forward": pct(pos["Forward"] / tot, 0),
+              "Centre": pct(pos["Center"] / tot, 0), "VAL40": M5["rol_ortalamalari"][k]["VAL40"], "RAPM": M5["rol_ortalamalari"][k]["RAPM"]})
+pd.DataFrame(t).style.hide(axis="index").format(precision=2, subset=["Jaccard", "VAL40", "RAPM"]).format(precision=1, subset=["Height (cm)"])
+```
+
+## Roles and registered positions
+
+Roles were strongly associated with registered position (Cramér's V = `{python} POS["cramers_v"]`). Ball handlers were almost exclusively guards and rim protectors almost exclusively centres, whereas wings and both forward roles drew substantially from two positions (@tbl-roles).
+
+## Roles, player value and lineup performance
+
+RAPM was estimated for `{python} M5["rapm_oyuncu_N"]` players (SD `{python} M5["rapm_sd"]` points per 100 possessions); home advantage was `{python} M5["ev_sahibi_avantaji"]` points per 100 possessions. Role explained `{python} pct(M5["eta2_rol"]["VAL40"])` of the variance in the box-score valuation index but `{python} pct(M5["eta2_rol"]["RAPM"])` of the variance in RAPM; the two measures correlated at *r* = `{python} M5["korelasyon_RAPM_VAL40"]`.
+
+In the out-of-time validation, RAPM explained `{python} pct(M5["test_R2"]["RAPM"], 2)` of the possession-weighted variance in segment net rating, compared with `{python} pct(M5["test_R2"]["VAL40_toplami"], 2)` for the summed valuation index. Adding role composition raised this to `{python} pct(M5["test_R2"]["RAPM_rol_bilesimi"], 2)`, a gain that did not exceed that obtained with permuted role labels (*p* = `{python} M5["rol_bilesimi"]["p"]`). The result was the same with the four-role solution (*p* = `{python} M4["rol_bilesimi"]["p"]`).
+
+In the sensitivity analysis based on the seven-cluster solution, the naive chi-square test indicated a non-random role distribution among "significant" role combinations when all lineups were included (χ² = `{python} F0T["chi2"]`), but `{python} F0T["anlamli_formul"] - F0T["anlamli_formul_pozitif"]` of the `{python} F0T["anlamli_formul"]` selected combinations had negative net ratings. When lineups were required to play at least 2 minutes, the role distribution did not differ from that expected under permutation (χ² = `{python} F2T["chi2"]`, permutation *p* = `{python} F2T["permutasyon"]["chi2_p"]`), and the number of significant combinations (`{python} F2T["anlamli_formul"]`) matched the number expected by chance (`{python} F2T["permutasyon"]["null_anlamli_formul_ort"]`).

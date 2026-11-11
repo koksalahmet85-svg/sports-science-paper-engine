@@ -1,17 +1,25 @@
 ---
-title: "Başlık"
+title: "Functional player roles in EuroLeague basketball: stability, positional overlap, and their limited value for explaining lineup performance"
 author:
   - name: Ahmet Köksal
     corresponding: true
 abstract: |
-  Amaç / Yöntem / Bulgular / Sonuç (yapılandırılmış, ≤250 kelime)
-keywords: [spor analitiği, antrenman yükü]
+  **Purpose:** Data-driven player roles are increasingly used to describe "positionless" basketball and to guide lineup construction, yet the stability of such roles and their added value for lineup performance are rarely tested. **Methods:** We analysed all EuroLeague games from 2016–17 to 2024–25 using official box scores, play-by-play, shot coordinates and player registry data. Role-descriptive variables (possession shares computed with true on-court denominators, shot-location profile, assist-network indicators and height) were standardised within season and clustered with Gaussian mixture models; the number of roles was chosen by bootstrap cluster stability. Role composition was then tested against lineup net rating with regularised adjusted plus-minus (RAPM) as a control for individual quality, using an out-of-time validation and a label-permutation test. **Results:** Five roles were stable, whereas solutions with six or more roles and a previously used seven-cluster Ward solution were not. Roles were strongly associated with registered positions at the extremes (ball handlers, rim protectors) but cut across positions for wings and forwards. Role explained a substantial share of variance in a box-score valuation index but almost none in RAPM, and role composition did not improve out-of-time prediction of lineup net rating beyond individual quality. **Conclusions:** Five functional roles describe EuroLeague players reproducibly from open data, but role composition carries little information about lineup success once player quality is accounted for; box-score valuation indices are role-biased.
+keywords: [basketball, cluster analysis, player roles, lineup, plus-minus, EuroLeague]
 ---
 
 ```{python}
 #| label: setup
 import json, pathlib
+import pandas as pd
 R = json.loads(pathlib.Path("analysis/results.json").read_text())
+A, V5, M5, M4 = R["paper_a"], R["archetypes_v2_full"], R["lineup_model_K5"], R["lineup_model_K4"]
+SCAN, FIN, POS = V5["tarama"], V5["nihai"], R["role_position"]["K5_tam"]
+ROLE = {"1": "Ball handler", "2": "Interior forward", "3": "Stretch forward", "4": "Rim protector", "5": "Wing"}
+F2T = R["formula_test_corrected_min2_tezarketip"]
+F0T = R["formula_test_corrected_min0_tezarketip"]
+n = lambda x: f"{x:,}"
+pct = lambda x, d=1: f"{100 * x:.{d}f}%"
 ```
 
 {{< include sections/introduction.qmd >}}
@@ -22,11 +30,15 @@ R = json.loads(pathlib.Path("analysis/results.json").read_text())
 
 {{< include sections/discussion.qmd >}}
 
-# Yapay Zekâ Kullanım Beyanı {.unnumbered}
+# Data and code availability {.unnumbered}
 
-Literatür taraması ve dil düzenlemesinde yapay zekâ araçları (Claude, paper-qa, gpt-researcher) kullanılmıştır. Tüm kaynaklar, analizler ve yorumlar yazar(lar) tarafından doğrulanmıştır; sorumluluk yazar(lar)a aittir.
+All data were obtained from the publicly accessible EuroLeague application programming interface. The code that downloads the data and reproduces every number, table and test in this article is available in the project repository.
 
-# Kaynaklar {.unnumbered}
+# Use of artificial intelligence {.unnumbered}
+
+Generative artificial intelligence tools (Claude) were used to assist with literature search, programming and language editing. All sources, analyses and interpretations were verified by the author, who takes full responsibility for the content.
+
+# References {.unnumbered}
 
 ::: {#refs}
 :::
