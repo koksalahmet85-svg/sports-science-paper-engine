@@ -97,3 +97,13 @@ pivotlara giden payı, asist çeşitliliği, 2 ve 3 sayılıklarda asistli isabe
   Stretch Forvet'in üçlüklerinin neredeyse tamamı asistli; İç Saha Forveti pivotlara asist yapmıyor, kendisi
   guard'lardan besleniyor.
 Öneri: ana analiz K = 5 (tam değişken seti); K = 4 duyarlılık analizi.
+
+## 9. Dört faktör (Oliver) — kümelemeye eklenmedi (2026-11-11)
+- Oyuncu düzeyi dört faktörün üçü (TOV%, ORB%, FTr) zaten değişken setinde; eFG% verimlilik ölçüsü olduğu için bilinçli
+  olarak dışarıda.
+- Yeni olan: oyuncu sahadayken takımın hücum ve savunma dört faktörünün sahada − kenarda farkı (`advanced.py`, FF_*).
+  Sonuç: (a) güvenilirlik düşük — aynı oyuncunun ardışık sezonları arası korelasyon ≈ 0,07–0,33 (rol değişkenlerinde
+  USG% ≈ 0,80, ORB% ≈ 0,91); (b) rol bu farkların varyansının en çok ~%9'unu açıklıyor (rakip serbest atış oranı),
+  diğerlerinde ≤ %2; (c) kümelemeye eklenince K = 5 kararlılığı artmıyor (≈ 0,69; eklenmeden ≈ 0,71), silhouette düşüyor.
+- Kullanım yeri: kümeleme değil, DİZİLİM düzeyi sonuç değişkeni. Net rating'i dört faktöre ayrıştırmak, bir rol
+  kombinasyonunun NEDEN kazandırdığını (şut kalitesi mi, top kaybı mı, ribaund mu, faul mü) gösterir.

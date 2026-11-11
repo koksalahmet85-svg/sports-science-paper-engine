@@ -86,6 +86,20 @@ def main() -> None:
     out["NetRtg_on"] = out["ORtg_on"] - out["DRtg_on"]
     net_off = (safe(a["off_tm_pts"], a["off_tm_poss"]) - safe(a["off_op_pts"], a["off_op_poss"])) * 100
     out["OnOff_net"] = out["NetRtg_on"] - net_off
+    # Dört faktör (Oliver): oyuncu sahadayken takımın hücum (O_) ve savunma (D_) faktörleri, sahada − kenarda farkı
+    def four(pre, us, them):
+        g = lambda c: a[f"{pre}{c}"]
+        fga_ = g(f"{us}_2FGM") + g(f"{us}_2FGA") + g(f"{us}_3FGM") + g(f"{us}_3FGA")
+        return {"eFG": safe(g(f"{us}_2FGM") + 1.5 * g(f"{us}_3FGM"), fga_),
+                "TOV": safe(g(f"{us}_TO"), g(f"{us}_poss")),
+                "ORB": safe(g(f"{us}_Op"), g(f"{us}_Op") + g(f"{them}_Dp")),
+                "FTr": safe(g(f"{us}_FTM") + g(f"{us}_FTA"), fga_)}
+
+    for side, us, them in (("O", "tm", "op"), ("D", "op", "tm")):
+        on, off = four("", us, them), four("off_", us, them)
+        for k in on:
+            out[f"FF_{side}_{k}_on"] = on[k]
+            out[f"FF_{side}_{k}_diff"] = on[k] - off[k]
     out.to_csv(PROC / "advanced.csv.gz", index=False)
     show = ["USG_pct", "AST_pct", "ORB_pct", "DRB_pct", "STL_pct", "BLK_pct", "TOV_pct", "3PAr", "FTr", "TS_pct",
             "NetRtg_on", "OnOff_net"]
