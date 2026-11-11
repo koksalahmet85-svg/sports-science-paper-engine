@@ -84,3 +84,16 @@ standartlaştırılmış değer ya da etki tabanlı (RAPM tipi) değer kullanıl
   bağlı (Top Taşıyıcı'nın ~%96'sı Guard, Boyalı Alan Koruyucusu'nun ~%90'ı Center); ara roller pozisyonları kesiyor
   (Kenar Şutörü ~%57 Forward / %39 Guard; Çok Yönlü Forvet ~%61 Forward / %32 Center). Makalede "pozisyon-ötesi yapı"
   iddiası "kanat ve forvet rollerinde pozisyon-ötesi; oyun kurucu ve pivot rollerinde değil" biçiminde daraltılmalı.
+
+## 8. Asist ağı ile beş rollü çözüm (2026-11-11)
+`engine/data/assist_network.py` (83.164 pasör → bitirici kenarı): yaratıcı endeksi, asistlerin üçlüğe / pota yakınına /
+pivotlara giden payı, asist çeşitliliği, 2 ve 3 sayılıklarda asistli isabet payı, asistlerin guard'lardan gelme payı.
+`archetypes_v2.py --features full` (ileri istatistik + şut profili + boy + asist ağı; 27 değişken):
+- GMM K = 5 kararlılığı K = 4 ile eşitlendi (ortalama Jaccard ≈ 0,71; en zayıf küme ≈ 0,58–0,59); dönemler arası
+  uyum K = 5'te daha yüksek (ARI ≈ 0,58). K ≥ 6 yine kararsız (≈ 0,60 ve altı).
+- Beş rol (küme bazında Jaccard, B = 100): Top Taşıyıcı ≈ 0,78; Boyalı Alan Koruyucusu ≈ 0,91; Stretch Forvet ≈ 0,65;
+  İç Saha Forveti ≈ 0,61 (boyla tek başına ≈ 0,42 idi); Kanat ≈ 0,58.
+- Ayrımı sağlayan ağ değişkenleri: Top Taşıyıcı'nın 2 sayılıklarının yalnızca ~%14'ü asistli (şutunu kendi yaratıyor);
+  Stretch Forvet'in üçlüklerinin neredeyse tamamı asistli; İç Saha Forveti pivotlara asist yapmıyor, kendisi
+  guard'lardan besleniyor.
+Öneri: ana analiz K = 5 (tam değişken seti); K = 4 duyarlılık analizi.

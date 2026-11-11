@@ -15,7 +15,8 @@ from scipy.stats import chi2_contingency
 ROOT = Path(__file__).resolve().parents[2]
 PROC = ROOT / "data" / "processed"
 RESULTS = Path(__file__).with_name("results.json")
-SETS = {"K4_ileri": "archetypes_v2_advanced.csv", "K5_ileri_boy": "archetypes_v2_advanced_height.csv"}
+SETS = {"K4_ileri": "archetypes_v2_advanced.csv", "K5_ileri_boy": "archetypes_v2_advanced_height.csv",
+        "K5_tam": "archetypes_v2_full.csv"}
 
 
 def main() -> None:
