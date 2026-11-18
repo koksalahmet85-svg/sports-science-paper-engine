@@ -150,6 +150,7 @@ def main() -> None:
         sh = roles.assign(Arketip=roles.groupby("Season")["Arketip"].transform(lambda s: rng.permutation(s.values)))
         null.append(comp_gain(dict(zip(zip(sh["Player_ID"], sh["Season"]), sh["Arketip"])))[0] - r2_rapm)
     null = np.array(null)
+    pd.DataFrame({"kazanc": null}).to_csv(PROC / f"lineup_null_K{k}.csv", index=False)
 
     pairs = list(combinations_with_replacement(range(1, k + 1), 2))
     names = [f"n{r}" for r in range(1, k + 1)] + [f"n{x}×n{y}" for x, y in pairs]

@@ -2,6 +2,7 @@
 
 Şekil 1: rol sayısına göre bootstrap kararlılığı (GMM, Ward) ve tezin Ward K = 7 çözümü.
 Şekil 2: beş rolün değişken profili (sezon içi z-skor ortalamaları, seçili değişkenler).
+Şekil 3: rol bileşiminin test R² kazancı — rol etiketleri karıştırıldığında elde edilen sıfır dağılımı ve gözlenen değer.
 
     python manuscript/analysis/figures_paper_a.py
 """
@@ -61,8 +62,22 @@ def fig2() -> None:
     fig.savefig(FIG / "fig2_role_profiles.png", dpi=300)
 
 
+def fig3() -> None:
+    null = pd.read_csv(PROC / "lineup_null_K5.csv")["kazanc"] * 100
+    obs = R["lineup_model_K5"]["rol_bilesimi"]["kazanc"] * 100
+    fig, ax = plt.subplots(figsize=(5.5, 3.4))
+    ax.hist(null, bins=40, color="0.75", edgecolor="white", label="Permuted role labels")
+    ax.axvline(obs, color="C3", lw=2, label="Observed role labels")
+    ax.set_xlabel("Gain in out-of-time R² over RAPM (percentage points)")
+    ax.set_ylabel("Permutations")
+    ax.legend(frameon=False, fontsize=8)
+    fig.tight_layout()
+    fig.savefig(FIG / "fig3_permutation.png", dpi=300)
+
+
 if __name__ == "__main__":
     FIG.mkdir(exist_ok=True)
     fig1()
     fig2()
+    fig3()
     print("→", sorted(p.name for p in FIG.glob("*.png")))
