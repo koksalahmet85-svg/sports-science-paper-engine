@@ -8,7 +8,7 @@
 5. Eksik bilgi → varsayım değil, `manuscript/OPEN_QUESTIONS.md`'ye soru.
 
 ## Hat
-RQ → `literature-scout` (sspe-search / sspe-gap / sspe-ask) → `methodologist` → `data-analyst` (`make analysis`) → yazım → `/paper-loop` (q1-reviewer döngüsü) → `make render` / `make journal J=elsevier`.
+RQ → `literature-scout` (sspe-search / sspe-gap / sspe-ask) → `methodologist` → `data-analyst` (`make analysis`) → `/outline-15` (15 Adım iskeleti; şekiller yazımdan önce) → yazım → `/paper-loop` (q1-reviewer döngüsü) → `make render` / `make journal J=elsevier`.
 
 ## Komutlar
 - `make search Q="..."`, `make gap Q="..."`, `make ask Q="..."`

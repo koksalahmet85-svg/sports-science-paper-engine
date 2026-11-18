@@ -2,7 +2,7 @@
 
 ## Number and stability of roles
 
-Bootstrap stability was highest for four and five roles and declined for more (@tbl-stab). With the full variable set, the five-role solution was about as stable as the four-role solution (@tbl-stab) and agreed better across periods (adjusted Rand index `{python} SCAN["gmm_K5"]["donemler_arasi_ARI"]` vs `{python} SCAN["gmm_K4"]["donemler_arasi_ARI"]`). The previously used seven-cluster Ward solution was not stable (mean Jaccard `{python} A["thesis_ward7_jaccard_mean"]`, minimum `{python} A["thesis_ward7_jaccard_min"]`).
+Bootstrap stability was highest for four and five roles and declined for more (@fig-stab, @tbl-stab). With the full variable set, the five-role solution was about as stable as the four-role solution (@tbl-stab) and agreed better across periods (adjusted Rand index `{python} SCAN["gmm_K5"]["donemler_arasi_ARI"]` vs `{python} SCAN["gmm_K4"]["donemler_arasi_ARI"]`). The previously used seven-cluster Ward solution was not stable (mean Jaccard `{python} A["thesis_ward7_jaccard_mean"]`, minimum `{python} A["thesis_ward7_jaccard_min"]`).
 
 ```{python}
 #| label: tbl-stab
@@ -13,9 +13,13 @@ rows = [{"Roles": k, "Silhouette": SCAN[f"gmm_K{k}"]["silhouette"], "Mean Jaccar
 pd.DataFrame(rows).style.hide(axis="index").format(precision=2)
 ```
 
+![Role partitions finer than five are not stable under resampling. Mean bootstrap Jaccard similarity of clusters (100 resamples) for Gaussian mixture and Ward clustering with the full variable set, and for the previously used seven-cluster Ward solution. Dashed line: 0.75 (stable); dotted line: 0.5 (dissolved).](figures/fig1_stability.png){#fig-stab width=80%}
+
 ## The five roles
 
-The five roles are summarised in @tbl-roles. Ball handlers and rim protectors were the most stable roles; the wing role was the least stable.
+![The five roles differ mainly in shot creation, shot location and size. Cells show the mean within-season z-score of selected role variables in each role; positive values indicate above-average values in the season.](figures/fig2_role_profiles.png){#fig-prof width=100%}
+
+The five roles are profiled in @fig-prof and summarised in @tbl-roles. Ball handlers and rim protectors were the most stable roles; the wing role was the least stable.
 
 ```{python}
 #| label: tbl-roles
