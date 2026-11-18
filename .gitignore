@@ -10,3 +10,6 @@ manuscript/*_files/
 data/raw/
 manuscript/analysis/results.json
 data/processed/
+manuscript_b/_output/
+manuscript_b/.quarto/
+manuscript_b/*_files/

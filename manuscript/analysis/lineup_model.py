@@ -31,6 +31,8 @@ PROC = ROOT / "data" / "processed"
 RESULTS = Path(__file__).with_name("results.json")
 SEED = 20261111
 LAMBDAS = [500, 1000, 2000, 4000, 8000]
+COMP_ALPHAS = [100, 1000, 5000, 20000, 100000]
+POWER_DELTAS = [0.25, 0.5, 1.0]
 MIN_POSS = 300  # bunun altındaki oyuncular "yedek" sütununda toplanır
 
 
@@ -98,7 +100,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--roles", default="archetypes_v2_full.csv")
     ap.add_argument("--B", type=int, default=500)
+    ap.add_argument("--power", type=int, default=0, help="güç simülasyonu tekrar sayısı (0 = yapma)")
+    ap.add_argument("--power-B", type=int, default=100)
     a = ap.parse_args()
+    tag = Path(a.roles).stem
     rng = np.random.default_rng(SEED)
     st = load()
     roles = pd.read_csv(PROC / a.roles)
@@ -133,24 +138,104 @@ def main() -> None:
         return (s("LA") - s("LB")).reshape(-1, 1)
 
     val = Ridge(alpha=1e-6).fit(valsum(tr), tr["y"], sample_weight=tr["poss"])
+    pg = pd.read_csv(PROC / "player_game.csv.gz")
+    pg_tr = pg[pg["Season"] <= 2022].groupby("Player_ID")[["Valuation", "MIN"]].sum()
+    pg_tr = pg_tr[pg_tr["MIN"] >= 90]
+    pir = pg_tr["Valuation"] / pg_tr["MIN"] * 40
+    pmean = float(pir.mean())
+
+    def pirsum(d):
+        s_ = lambda col: np.array([sum(pir.get(p, pmean) for p in lu) for lu in d[col]])
+        return (s_("LA") - s_("LB")).reshape(-1, 1)
+
+    pirm = Ridge(alpha=1e-6).fit(pirsum(tr), tr["y"], sample_weight=tr["poss"])
     yte, wte = te["y"].values, te["poss"].values
     base = float(np.average(tr["y"], weights=tr["poss"]))
 
-    # 3. Rol bileşimi (RAPM artığı üzerinde) + permütasyon
-    def comp_gain(role_map):
-        ftr, fte = role_features(tr, role_map, k), role_features(te, role_map, k)
-        m = Ridge(alpha=5000).fit(ftr, tr["y"].values - p_rapm_tr, sample_weight=tr["poss"].values)
-        return wr2(yte, p_rapm_te + m.predict(fte), wte), m
+    # 3. Rol bileşimi (RAPM artığı üzerinde) + permütasyon; ceza katsayısı eğitimde maç gruplu CV ile seçilir
+    f_tr_obs = role_features(tr, role, k)
+    resid = tr["y"].values - p_rapm_tr
+    comp_cv = {}
+    for al in COMP_ALPHAS:
+        pred = np.zeros(len(tr))
+        for f_tr, f_te in GroupKFold(5).split(f_tr_obs, groups=tr["game"]):
+            mm = Ridge(alpha=al).fit(f_tr_obs[f_tr], resid[f_tr], sample_weight=tr["poss"].values[f_tr])
+            pred[f_te] = mm.predict(f_tr_obs[f_te])
+        comp_cv[al] = round(float(wr2(resid, pred, tr["poss"].values)), 6)
+    comp_alpha = max(comp_cv, key=comp_cv.get)
 
-    r2_comp, comp = comp_gain(role)
-    r2_rapm = wr2(yte, p_rapm_te, wte)
-    gain = r2_comp - r2_rapm
-    null = []
-    for _ in range(a.B):
+    def comp_gain(role_map, y_tr=None, y_te=None, p_tr=None, p_te=None, cols_=None):
+        y_tr = tr["y"].values if y_tr is None else y_tr
+        y_te_ = yte if y_te is None else y_te
+        p_tr = p_rapm_tr if p_tr is None else p_tr
+        p_te = p_rapm_te if p_te is None else p_te
+        ftr, fte = role_features(tr, role_map, k), role_features(te, role_map, k)
+        if cols_ is not None:
+            ftr, fte = ftr[:, cols_], fte[:, cols_]
+        m = Ridge(alpha=comp_alpha).fit(ftr, y_tr - p_tr, sample_weight=tr["poss"].values)
+        return wr2(y_te_, p_te + m.predict(fte), wte) - wr2(y_te_, p_te, wte), m
+
+    def permuted():
         sh = roles.assign(Arketip=roles.groupby("Season")["Arketip"].transform(lambda s: rng.permutation(s.values)))
-        null.append(comp_gain(dict(zip(zip(sh["Player_ID"], sh["Season"]), sh["Arketip"])))[0] - r2_rapm)
-    null = np.array(null)
-    pd.DataFrame({"kazanc": null}).to_csv(PROC / f"lineup_null_K{k}.csv", index=False)
+        return dict(zip(zip(sh["Player_ID"], sh["Season"]), sh["Arketip"]))
+
+    gain, comp = comp_gain(role)
+    r2_comp = wr2(yte, p_rapm_te, wte) + gain
+    comp_te = comp.predict(role_features(te, role, k))
+    w_sd = lambda x: float(np.sqrt(np.average((x - np.average(x, weights=wte)) ** 2, weights=wte)))
+    pred_sd = {"RAPM": round(w_sd(p_rapm_te), 2), "rol_bilesimi": round(w_sd(comp_te), 2)}
+    r2_rapm = wr2(yte, p_rapm_te, wte)
+    # Ayrıştırma: yalnızca rol sayıları (ana etkiler) vs sayılar + çiftler (sinerji); çift katkısının maç bootstrap GA'sı
+    counts = list(range(k))
+    gain_counts, m_counts = comp_gain(role, cols_=counts)
+    null_counts = np.array([comp_gain(permuted(), cols_=counts)[0] for _ in range(min(a.B, 500))])
+    f_te_all = role_features(te, role, k)
+    pc, pf = p_rapm_te + m_counts.predict(f_te_all[:, counts]), p_rapm_te + comp.predict(f_te_all)
+    g_idx0 = {g: np.where(te["game"].values == g)[0] for g in te["game"].unique()}
+    games0 = np.array(list(g_idx0))
+    inc = []
+    for _ in range(500):
+        ii = np.concatenate([g_idx0[g] for g in rng.choice(games0, len(games0))])
+        inc.append(wr2(yte[ii], pf[ii], wte[ii]) - wr2(yte[ii], pc[ii], wte[ii]))
+    decomp = {"sayilar_kazanc": round(float(gain_counts), 5),
+              "sayilar_p": round(float((1 + (null_counts >= gain_counts).sum()) / (1 + len(null_counts))), 4),
+              "ciftler_ek_kazanc": round(float(gain - gain_counts), 5),
+              "ciftler_ek_GA95": [round(float(x), 5) for x in np.percentile(inc, [2.5, 97.5])]}
+    # test maçları yeniden örneklenerek R² farklarının %95 GA'sı
+    preds = {"RAPM": p_rapm_te, "VAL40": val.predict(valsum(te)), "PIR40": pirm.predict(pirsum(te))}
+    g_idx = {g: np.where(te["game"].values == g)[0] for g in te["game"].unique()}
+    games = np.array(list(g_idx))
+    boot = {kk: [] for kk in ("RAPM-VAL40", "RAPM-PIR40")}
+    for _ in range(500):
+        ii = np.concatenate([g_idx[g] for g in rng.choice(games, len(games))])
+        r = {kk: wr2(yte[ii], v[ii], wte[ii]) for kk, v in preds.items()}
+        boot["RAPM-VAL40"].append(r["RAPM"] - r["VAL40"])
+        boot["RAPM-PIR40"].append(r["RAPM"] - r["PIR40"])
+    r2_ci = {kk: [round(float(x), 5) for x in np.percentile(v, [2.5, 97.5])] for kk, v in boot.items()}
+    null = np.array([comp_gain(permuted())[0] for _ in range(a.B)])
+    pd.DataFrame({"kazanc": null}).to_csv(PROC / f"lineup_null_{tag}.csv", index=False)
+
+    # 3b. Güç simülasyonu: en sık görülen iki farklı rolün birlikteliğine δ puan/100 hücum sinerji eklenir
+    power = {}
+    if a.power:
+        pairs_all = list(combinations_with_replacement(range(1, k + 1), 2))
+        occ = {pp: np.abs(role_features(tr, role, k)[:, k + i]).sum() for i, pp in enumerate(pairs_all) if pp[0] != pp[1]}
+        target = max(occ, key=occ.get)
+        j_ = k + pairs_all.index(target)
+        inj_tr, inj_te = role_features(tr, role, k)[:, j_], role_features(te, role, k)[:, j_]
+        for delta in POWER_DELTAS:
+            hits = 0
+            for _ in range(a.power):
+                noise_tr = tr["y"].values + delta * inj_tr
+                noise_te = yte + delta * inj_te
+                m_ = Ridge(alpha=lam).fit(xtr, noise_tr, sample_weight=tr["poss"].values)
+                p_tr_, p_te_ = m_.predict(xtr), m_.predict(player_matrix(te, cols_tr, seen))
+                g_obs = comp_gain(role, noise_tr, noise_te, p_tr_, p_te_)[0]
+                g_null = [comp_gain(permuted(), noise_tr, noise_te, p_tr_, p_te_)[0] for _ in range(a.power_B)]
+                hits += (1 + sum(g >= g_obs for g in g_null)) / (1 + a.power_B) < 0.05
+            power[str(delta)] = round(hits / a.power, 2)
+            print("güç", target, delta, power[str(delta)], flush=True)
+        power = {"cift": list(target), "guc": power, "sim": a.power, "B": a.power_B}
 
     pairs = list(combinations_with_replacement(range(1, k + 1), 2))
     names = [f"n{r}" for r in range(1, k + 1)] + [f"n{x}×n{y}" for x, y in pairs]
@@ -162,9 +247,9 @@ def main() -> None:
     pd.DataFrame({"Player_ID": rapm.index, "RAPM": rapm.values}).to_csv(PROC / "rapm.csv", index=False)
     car = ps.groupby("Player_ID").apply(lambda d: pd.Series({
         "VAL40": np.average(d["VAL40"], weights=d["MIN"]), "MIN": d["MIN"].sum()}), include_groups=False)
-    main_role = (roles.merge(ps[["Player_ID", "Season", "MIN"]], on=["Player_ID", "Season"], suffixes=("", "_ps"))
-                 .groupby(["Player_ID", "Arketip"])["MIN_ps"].sum().reset_index()
-                 .sort_values("MIN_ps").groupby("Player_ID").tail(1).set_index("Player_ID")["Arketip"])
+    main_role = (roles[["Player_ID", "Season", "Arketip"]].merge(ps[["Player_ID", "Season", "MIN"]], on=["Player_ID", "Season"])
+                 .groupby(["Player_ID", "Arketip"])["MIN"].sum().reset_index()
+                 .sort_values("MIN").groupby("Player_ID").tail(1).set_index("Player_ID")["Arketip"])
     j = car.join(rapm, how="inner").join(main_role)
 
     def eta2(c):
@@ -178,11 +263,17 @@ def main() -> None:
         "rapm_oyuncu_N": int(len(rapm)), "rapm_sd": round(float(rapm.std()), 2),
         "test_R2": {"sabit": round(float(wr2(yte, np.full(len(te), base), wte)), 5),
                     "VAL40_toplami": round(float(wr2(yte, val.predict(valsum(te)), wte)), 5),
+                    "PIR40_toplami": round(float(wr2(yte, pirm.predict(pirsum(te)), wte)), 5),
+                    "fark_GA95": r2_ci,
                     "RAPM": round(float(r2_rapm), 5), "RAPM_rol_bilesimi": round(float(r2_comp), 5)},
-        "rol_bilesimi": {"kazanc": round(float(gain), 5), "B": a.B,
+        "rol_bilesimi": {"kazanc": round(float(gain), 5), "B": a.B, "ceza_cv": comp_cv, "ceza": comp_alpha,
+                         "terim_N": int(k + len(list(combinations_with_replacement(range(1, k + 1), 2)))),
                          "null_ort": round(float(null.mean()), 5), "null_p95": round(float(np.quantile(null, .95)), 5),
                          "p": round(float((1 + (null >= gain).sum()) / (1 + a.B)), 4),
                          "en_buyuk_katsayilar": coef.reindex(coef.abs().sort_values(ascending=False).index).head(8).to_dict()},
+        "guc": power,
+        "tahmin_SD_test": pred_sd,
+        "ayristirma": decomp,
         "korelasyon_RAPM_VAL40": round(float(j["RAPM"].corr(j["VAL40"])), 3),
         "eta2_rol": {"RAPM": round(eta2("RAPM"), 3), "VAL40": round(eta2("VAL40"), 3)},
         "rol_ortalamalari": j.groupby("Arketip")[["RAPM", "VAL40"]].mean().round(2).to_dict(orient="index"),
@@ -190,7 +281,10 @@ def main() -> None:
                            .head(15)[["Player", "RAPM", "VAL40"]].round(2).values.tolist()),
     }
     res = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
-    res[f"lineup_model_K{k}"] = out
+    key = f"lineup_model_K{k}" if tag.startswith("archetypes") else f"lineup_model_{tag}"
+    if not power and res.get(key, {}).get("guc"):  # önceki güç simülasyonunu koru
+        out["guc"] = res[key]["guc"]
+    res[f"lineup_model_K{k}" if tag.startswith("archetypes") else f"lineup_model_{tag}"] = out
     RESULTS.write_text(json.dumps(res, indent=2, ensure_ascii=False))
     print(json.dumps(out, indent=2, ensure_ascii=False))
 

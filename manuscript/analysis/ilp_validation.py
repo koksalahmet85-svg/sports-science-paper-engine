@@ -35,8 +35,9 @@ from lineup_model import PROC, RESULTS, SEED, columns, load, player_matrix
 
 LAMBDA = 4000          # lineup_model.py'de çapraz doğrulamayla seçilen değer
 ROSTER_MIN = 100       # ILP aday havuzu: ilk yarıda en az bu kadar dakika
-BALLH, BIGS, RIMP = {1}, {2, 4}, {4}   # archetypes_v2_full.csv: 1 Top Taşıyıcı, 2 İç Saha F., 4 Boyalı Alan K.
-METRICS = ["VAL40_sezon", "VAL40_havuz", "RAPM", "DAKIKA"]
+BALLH, BIGS, RIMP = {5}, {2, 4}, {4}   # roles_final_K5.csv: 5 Top Taşıyıcı, 2 İç Saha Uzunu, 4 Boyalı Alan Koruyucusu
+METRICS = ["PIR40_sezon", "VAL40_sezon", "PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]
+COMMON = ["PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]   # ortak alt küme: hepsinin tanımlı olduğu segmentler
 
 
 def val40(d: pd.DataFrame) -> pd.Series:
@@ -45,6 +46,12 @@ def val40(d: pd.DataFrame) -> pd.Series:
            + (d["FreeThrowsAttempted"] - d["FreeThrowsMade"]) + d["Turnovers"])
     g = pd.DataFrame({"v": pos - neg, "m": d["MIN"], "p": d["Player_ID"]}).groupby("p").sum()
     return (g["v"] / g["m"] * 40).where(g["m"] >= 60)
+
+
+def pir40(d: pd.DataFrame) -> pd.Series:
+    """EuroLeague'in resmî Performance Index Rating'i (kutu skorundaki Valuation), 40 dakikaya."""
+    g = d.groupby("Player_ID")[["Valuation", "MIN"]].sum()
+    return (g["Valuation"] / g["MIN"] * 40).where(g["MIN"] >= 60)
 
 
 def ilp(values: np.ndarray, roles: np.ndarray, rule: str) -> np.ndarray | None:
@@ -64,7 +71,7 @@ def main() -> None:
     a = ap.parse_args()
     rng = np.random.default_rng(SEED)
     st, pg = load(), pd.read_csv(PROC / "player_game.csv.gz")
-    roles = pd.read_csv(PROC / "archetypes_v2_full.csv")
+    roles = pd.read_csv(PROC / "roles_final_K5.csv")
     role = dict(zip(zip(roles["Player_ID"], roles["Season"]), roles["Arketip"]))
     seg_rows, pick_rows = [], []
 
@@ -79,7 +86,7 @@ def main() -> None:
         seen = set(tr["LA"].explode()) | set(tr["LB"].explode())
         rapm = {p: (m.coef_[cols.get(p, cols["__yedek__"])] if p in seen else 0.0)
                 for p in set(te["LA"].explode()) | set(te["LB"].explode()) | set(pg_first["Player_ID"])}
-        value = {"VAL40_sezon": val40(pg_first).dropna().to_dict(), "VAL40_havuz": val40(pg_pool).dropna().to_dict(),
+        value = {"PIR40_sezon": pir40(pg_first).dropna().to_dict(), "PIR40_havuz": pir40(pg_pool).dropna().to_dict(), "VAL40_sezon": val40(pg_first).dropna().to_dict(), "VAL40_havuz": val40(pg_pool).dropna().to_dict(),
                  "RAPM": rapm, "DAKIKA": pg_first.groupby("Player_ID")["MIN"].sum().to_dict()}
 
         # Sınama 2: takım başına ILP beşlisi
@@ -88,13 +95,18 @@ def main() -> None:
         for team, g in mins[mins["MIN"] >= ROSTER_MIN].groupby("Team"):
             ids = g["Player_ID"].tolist()
             rl = np.array([role.get((p, s), 0) for p in ids])
-            for metric in ("VAL40_sezon", "RAPM", "DAKIKA"):  # DAKIKA: en çok süre alan beşli (taban)
+            for metric in ("PIR40_sezon", "VAL40_sezon", "RAPM", "DAKIKA"):  # DAKIKA: en çok süre alan beşli (taban)
                 v = np.array([value[metric].get(p, np.nan) for p in ids])
                 ok = ~np.isnan(v)
                 for rule in ("yok", "tez", "dengeli"):
                     sel = ilp(v[ok], rl[ok], rule) if ok.sum() >= 5 else None
                     if sel is not None:
                         picks[(team, metric, rule)] = set(np.array(ids)[ok][sel])
+
+        for (team, metric, rule), five in picks.items():
+            coach = picks.get((team, "DAKIKA", rule))
+            if coach is not None and metric != "DAKIKA":
+                pick_rows.append({"metric": metric, "rule": rule, "overlap": len(five & coach)})
 
         for us, them, sign in (("A", "B", 1.0), ("B", "A", -1.0)):
             lu, opp = te[f"L{us}"], te[f"L{them}"]
@@ -126,9 +138,11 @@ def main() -> None:
     out = {"segment_N": int(len(d)), "takim_sezon_N": int(len(clusters)), "B": a.B, "ev_sahibi_avantaji": round(home_adv, 2)}
 
     # Sınama 1
-    def slopes(x):
+    def slopes(x, metrics=METRICS, common=False):
         res = []
-        for metric in METRICS:
+        if common:
+            x = x.dropna(subset=COMMON)
+        for metric in metrics:
             q = x.dropna(subset=[metric])
             z = q.groupby("ts")[metric].transform(lambda c: (c - c.mean()) / (c.std(ddof=0) or np.nan))
             ok = z.notna().values
@@ -141,6 +155,16 @@ def main() -> None:
     est, lo, hi = boot(slopes)
     out["amac_fonksiyonu_egimi"] = {m_: {"egim": round(float(e), 2), "GA95": [round(float(l), 2), round(float(h), 2)]}
                                     for m_, e, l, h in zip(METRICS, est, lo, hi)}
+    # ortak alt kümede eğimler ve RAPM ile eşleştirilmiş farklar (aynı bootstrap örneklerinde)
+    def common_and_diffs(x):
+        e = slopes(x, COMMON, common=True)
+        r = e[COMMON.index("RAPM")]
+        return np.concatenate([e, [r - e[COMMON.index(m_)] for m_ in COMMON if m_ != "RAPM"]])
+    est, lo, hi = boot(common_and_diffs)
+    names = COMMON + [f"RAPM-{m_}" for m_ in COMMON if m_ != "RAPM"]
+    out["ortak_alt_kume"] = {"segment_payi": round(float(d.dropna(subset=COMMON).shape[0] / len(d)), 3),
+                             **{m_: {"egim": round(float(e), 2), "GA95": [round(float(l), 2), round(float(h), 2)]}
+                                for m_, e, l, h in zip(names, est, lo, hi)}}
     out["kapsam"] = {m_: round(float(d[m_].notna().mean()), 3) for m_ in METRICS}
 
     # Sınama 2
@@ -159,7 +183,21 @@ def main() -> None:
                        - np.average(x["y_adj"].values[rest], weights=x["poss"].values[rest]))
         return np.array(res)
 
-    est, lo, hi = boot(contrasts)
+    def contrasts_and_diffs(x):
+        c = contrasts(x)
+        idx = {k_: i for i, k_ in enumerate(pcols)}
+        diffs = [c[idx[k_]] - c[idx[f"pick_DAKIKA_{k_.rsplit('_', 1)[1]}"]] for k_ in pcols if "DAKIKA" not in k_]
+        return np.concatenate([c, diffs])
+
+    est_all, lo_all, hi_all = boot(contrasts_and_diffs)
+    est, lo, hi = est_all[:len(pcols)], lo_all[:len(pcols)], hi_all[:len(pcols)]
+    dnames = [k_[5:] for k_ in pcols if "DAKIKA" not in k_]
+    out["ilp_antrenore_gore_fark"] = {k_: {"fark": round(float(e), 2), "GA95": [round(float(l), 2), round(float(h), 2)]}
+                                     for k_, e, l, h in zip(dnames, est_all[len(pcols):], lo_all[len(pcols):], hi_all[len(pcols):])}
+    pr = pd.DataFrame(pick_rows)
+    out["antrenor_beslisiyle_ortak_oyuncu"] = pr.groupby(["metric", "rule"])["overlap"].mean().round(2).rename(
+        lambda t: t, axis=0).to_dict() if len(pr) else {}
+    out["antrenor_beslisiyle_ortak_oyuncu"] = {f"{a_}_{b_}": v for (a_, b_), v in out["antrenor_beslisiyle_ortak_oyuncu"].items()}
     out["ilp_beslisi"] = {}
     for c, e, l, h in zip(pcols, est, lo, hi):
         f = d[c].fillna(False).astype(bool)

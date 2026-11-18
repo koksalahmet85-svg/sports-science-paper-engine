@@ -1,4 +1,4 @@
-.PHONY: install search gap ask data formula-test paper-a analysis render journal check-cites
+.PHONY: install search gap ask data formula-test paper-a paper-b render-all analysis render journal check-cites
 
 install:            ## Python bağımlılıkları (+ Quarto ayrıca: https://quarto.org/docs/get-started/)
 	pip install -e ".[all]"
@@ -19,13 +19,22 @@ formula-test:       ## OPEN_QUESTIONS #2: 4 varyant × 1000 permütasyon
 	for m in corrected thesis; do for d in 0 2; do python manuscript/analysis/archetype_formulas.py --stints $$m --min-dur $$d --B 1000 > /dev/null; done; done
 	python manuscript/analysis/report_formula_test.py
 
-paper-a:            ## Makale A'nın tüm sayıları (data hedefinden sonra; ~30 dk)
+paper-a:            ## Makale A'nın tüm sayıları (data hedefinden sonra; ~60 dk)
 	python -m engine.data.shot_profile && python -m engine.data.bio && python -m engine.data.advanced && python -m engine.data.assist_network
-	cd manuscript/analysis && python thesis_archetypes.py && python archetypes_v2.py --features full --kmin 4 --kmax 8 --K 5 --method gmm \
-	  && python archetypes_v2.py --features advanced --kmin 4 --kmax 4 --K 4 --method gmm \
-	  && python role_position.py && python lineup_model.py --roles archetypes_v2_full.csv \
-	  && python lineup_model.py --roles archetypes_v2_advanced.csv && python paper_a_summary.py
+	cd manuscript/analysis && python thesis_archetypes.py && python roles_final.py \
+	  && python role_position.py \
+	  && python lineup_model.py --roles roles_final_K5.csv --power 100 \
+	  && python lineup_model.py --roles roles_final_K4.csv \
+	  && python lineup_model.py --roles thesis_archetypes.csv \
+	  && python paper_a_summary.py && python figures_paper_a.py
 	$(MAKE) formula-test
+
+paper-b:            ## Makale B'nin tüm sayıları (paper-a'dan sonra)
+	cd manuscript/analysis && python paper_b_values.py && python ilp_validation.py && python figures_paper_b.py
+
+render-all: check-cites ## iki makaleyi docx olarak üret
+	cd manuscript && quarto render --to docx
+	cd manuscript_b && quarto render --to docx
 
 analysis:
 	python manuscript/analysis/run.py

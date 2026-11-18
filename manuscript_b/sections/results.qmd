@@ -1,0 +1,54 @@
+# Results
+
+## Role dependence of player value measures
+
+Role explained a large share of between-player variance in the box-score indices but almost none in RAPM (@tbl-eta, @fig-bias): η² was `{python} f2(V["eta2"]["PIR40"])` (95% CI `{python} ci(V["eta2_GA95"]["PIR40"])`) for PIR40 and `{python} f2(V["eta2"]["VAL40"])` (`{python} ci(V["eta2_GA95"]["VAL40"])`) for VAL40, compared with `{python} f2(V["eta2"]["RAPM"])` (`{python} ci(V["eta2_GA95"]["RAPM"])`) for RAPM. Rim protectors and interior bigs had the highest PIR40 and stretch forwards and wings the lowest, whereas in RAPM the differences between roles were small.
+
+This pattern was not explained by the overlap between role variables and PIR components, by measurement error or by shrinkage. Among players with the same RAPM, role still explained a substantial share of the variance in PIR40 (partial η² = `{python} f2(V["RAPM_kosullu"]["PIR40"]["kismi_eta2"])`, 95% CI `{python} ci(V["RAPM_kosullu"]["PIR40"]["GA95"])`); at equal RAPM, interior bigs and rim protectors were rated `{python} f"{V['RAPM_kosullu']['PIR40']['rol_farki_RAPM_sabit']['2']:.1f}"` and `{python} f"{V['RAPM_kosullu']['PIR40']['rol_farki_RAPM_sabit']['4']:.1f}"` PIR points per 40 minutes higher than stretch forwards. With roles derived only from variables that are not PIR components, η² was `{python} f2(V["pir_bilesensiz_roller"]["eta2"]["PIR40"])` for PIR40 and `{python} f2(V["pir_bilesensiz_roller"]["eta2"]["RAPM"])` for RAPM. Split-half reliability was `{python} f2(V["guvenirlik"]["PIR40"]["spearman_brown"])` for PIR40 and `{python} f2(V["guvenirlik"]["RAPM"]["spearman_brown"])` for RAPM (n = `{python} V["guvenirlik"]["oyuncu_N"]` players), and reliability-corrected η² remained `{python} f2(V["eta2_duzeltilmis"]["RAPM"])` for RAPM, compared with `{python} f2(V["eta2_duzeltilmis"]["PIR40"])` for PIR40. A weaker RAPM penalty increased the spread of RAPM values (SD `{python} V["rapm_sd"]["ana"]` to `{python} V["rapm_sd"]["l1000"]` points per 100 possessions) without increasing η² (`{python} f2(V["eta2"]["RAPM_l1000"])`). PIR40 and RAPM were only weakly correlated (*r* = `{python} f2(V["korelasyon"]["RAPM"]["PIR40"])`).
+
+```{python}
+#| label: tbl-eta
+#| tbl-cap: "Box-score indices differ between roles far more than RAPM does (mean value by main role and share of variance explained by role; players with at least 400 minutes)."
+m = V["rol_ortalamasi_ham"]
+rows = [{"Role": ROLE[k], "Players": V["rol_N"][k], "PIR40": f"{m[k]['PIR40']:.2f}", "VAL40": f"{m[k]['VAL40']:.2f}", "RAPM": f"{m[k]['RAPM']:.2f}"} for k in sorted(m, key=int)]
+rows.append({"Role": "η² (95% CI)", "Players": V["oyuncu_N"],
+             "PIR40": f"{V['eta2']['PIR40']:.2f} ({ci(V['eta2_GA95']['PIR40'])})",
+             "VAL40": f"{V['eta2']['VAL40']:.2f} ({ci(V['eta2_GA95']['VAL40'])})",
+             "RAPM": f"{V['eta2']['RAPM']:.2f} ({ci(V['eta2_GA95']['RAPM'])})"})
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Box-score indices, unlike RAPM, differ systematically between player roles. Bars show the mean of each value measure by main role, standardised across players (z-score), for players with at least 400 career minutes.](figures/fig1_role_bias.png){#fig-bias width=90%}
+
+## Out-of-time predictive validity
+
+In 2023–2024 segments, RAPM explained `{python} pp(T["RAPM"])`% of the possession-weighted variance in net rating, compared with `{python} pp(T["PIR40_toplami"])`% for summed PIR40 and `{python} pp(T["VAL40_toplami"])`% for summed VAL40. The advantage of RAPM was `{python} cipp(T["fark_GA95"]["RAPM-PIR40"])` percentage points over PIR40 and `{python} cipp(T["fark_GA95"]["RAPM-VAL40"])` percentage points over VAL40 (95% CIs from game bootstrap), so it was unlikely to be due to chance. Absolute values were small for all predictors, as expected for single lineup segments.
+
+## Within-season validity of lineup value
+
+Per standard deviation of within-team lineup value, second-half net rating changed by `{python} slope("RAPM")` points per 100 possessions for RAPM and `{python} slope("DAKIKA")` for first-half minutes, whereas the confidence intervals of all box-score measures included zero, whether computed from the first half (PIR40 `{python} slope("PIR40_sezon")`) or from all prior data (PIR40 `{python} slope("PIR40_havuz")`; VAL40 `{python} slope("VAL40_havuz")`) (@fig-slope). Box-score values could not be computed for low-minute players and covered `{python} f"{100 * I['kapsam']['PIR40_havuz']:.0f}"`% of segments with pooled data. In the common subset in which all measures were defined (`{python} f"{100 * I['ortak_alt_kume']['segment_payi']:.0f}"`% of segments), RAPM remained the only measure whose interval excluded zero (`{python} f"{I['ortak_alt_kume']['RAPM']['egim']:.2f}"`, 95% CI `{python} ci(I['ortak_alt_kume']['RAPM']['GA95'])`), but the paired differences between RAPM and pooled PIR40 (`{python} ci(I['ortak_alt_kume']['RAPM-PIR40_havuz']['GA95'])`) and minutes (`{python} ci(I['ortak_alt_kume']['RAPM-DAKIKA']['GA95'])`) were not statistically distinguishable from zero.
+
+![Lineup value based on RAPM, unlike box-score indices, is associated with second-half net rating. Points: change in second-half net rating per standard deviation of within-team lineup value, adjusted for opponent RAPM and home advantage; bars: 95% team-season bootstrap confidence intervals.](figures/fig2_slopes.png){#fig-slope width=85%}
+
+## Optimised lineups versus the coach's rotation
+
+Second-half segments featuring at least four of the five players given most first-half minutes outperformed the team's other segments by `{python} contrast("DAKIKA_yok")` points per 100 possessions. Optimised fives shared on average about three of five players with this benchmark and were observed in a smaller share of possessions (@tbl-ilp). No optimisation variant differed from the coach benchmark under the same constraint: the paired differences ranged from `{python} f"{min(v['fark'] for v in CD.values()):.2f}"` to `{python} f"{max(v['fark'] for v in CD.values()):.2f}"` points per 100 possessions, and all confidence intervals included zero, spanning roughly ±4–5 points (@fig-ilp).
+
+```{python}
+#| label: tbl-ilp
+#| tbl-cap: "Optimised fives share about three players with the coach's most-used five and do not outperform it (second-half net rating relative to the team's other lineups, paired difference from the coach benchmark under the same constraint, possession share, team-seasons and overlap with the coach five)."
+SEL = {"DAKIKA": "Most-used players (coach)", "PIR40_sezon": "PIR40", "VAL40_sezon": "VAL40", "RAPM": "RAPM"}
+RULE = {"yok": "none", "tez": "≥ 1 rim protector", "dengeli": "balanced"}
+rows = []
+for m_ in SEL:
+    for r_ in RULE:
+        k = f"{m_}_{r_}"
+        rows.append({"Selection": SEL[m_], "Constraint": RULE[r_],
+                     "vs team's other lineups": f"{C[k]['fark']:.2f} ({ci(C[k]['GA95'])})",
+                     "vs coach benchmark": "—" if m_ == "DAKIKA" else f"{CD[k]['fark']:.2f} ({ci(CD[k]['GA95'])})",
+                     "Possession share": f"{100 * C[k]['hucum_payi']:.1f}%", "Team-seasons": C[k]["takim_sezon"],
+                     "Shared with coach five": "—" if m_ == "DAKIKA" else f"{OV[k]:.1f}"})
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Optimised lineups perform no differently from the coach's most-used players. Points: difference in opponent-adjusted second-half net rating between segments featuring the optimised five and segments featuring the coach benchmark under the same constraint; bars: 95% team-season bootstrap confidence intervals.](figures/fig3_ilp.png){#fig-ilp width=85%}

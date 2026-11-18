@@ -15,3 +15,9 @@ elle yapıldı. Kaynak ve kapsam her satırda belirtildi.
 - [@pendolareinecke2025exploring]: Kadınlar EuroLeague, 3 ana rol (özet). [@ibanez2025redefining]: 9 kararlı rol, k-means + GMM (özet).
 - [@grassetti2020extended]: 2018/19 EuroLeague, düzenlileştirilmiş adjusted plus-minus ile dizilim yönetimi (özet); rol analizi yok.
 - [@hennig2007cluster]: bootstrap Jaccard; ≥ 0,75 kararlı, ≤ 0,5 dağılmış eşikleri bu makaleden.
+
+## Hakem turu 1 sonrası eklenen kaynaklar (Crossref özetleri, 2026-11-18)
+- [@konca2026from]: EuroLeague 4 ve 5 numaraları, 2010–11 → 2024–25, 999 oyuncu-sezon, 11 ileri metrik; EFA, LMM, bulanık C-ortalamalar (YSA ile kararlılık). Pozisyon × dönem etkileşimi anlamsız; iki pozisyon paralel evrilmiş, uzunlar arasında aşamalı yakınsama. → "EuroLeague'de rol çalışması yok" denemez; bu çalışma yalnızca uzunları ve pozisyon yakınsamasını inceliyor, dizilim başarısını değil.
+- [@martonosi2023predicting]: Bireysel oyuncu sıra istatistikleriyle elit (artı-eksi/dakika > 0) beşlileri sınıflandırma; 2017–18'de eğitim, 2018–19 kadrolarında öngörü. → Dizilim başarısının bireysel oyuncu niteliklerinden öngörülebildiğini destekler.
+- [@south2024basketball]: NBA 2016–19; pozisyonun bileşimsel verisi ve bulanık k-ortalamalarla tanımlanan modern arketiplerle Bayesçi hiyerarşik savunma verimliliği modelleri; arketip yaklaşımı RMSE'de "modest improvement".
+- [@muniz2022sports]: JORS; özet Crossref'te yok — metinde yalnızca başlık düzeyinde (takım kurma kararları için analitik/optimizasyon) anılabilir.
