@@ -164,7 +164,7 @@ def main() -> None:
         comp_cv[al] = round(float(wr2(resid, pred, tr["poss"].values)), 6)
     comp_alpha = max(comp_cv, key=comp_cv.get)
 
-    def comp_gain(role_map, y_tr=None, y_te=None, p_tr=None, p_te=None, cols_=None):
+    def comp_gain(role_map, y_tr=None, y_te=None, p_tr=None, p_te=None, cols_=None, mask=None):
         y_tr = tr["y"].values if y_tr is None else y_tr
         y_te_ = yte if y_te is None else y_te
         p_tr = p_rapm_tr if p_tr is None else p_tr
@@ -173,7 +173,9 @@ def main() -> None:
         if cols_ is not None:
             ftr, fte = ftr[:, cols_], fte[:, cols_]
         m = Ridge(alpha=comp_alpha).fit(ftr, y_tr - p_tr, sample_weight=tr["poss"].values)
-        return wr2(y_te_, p_te + m.predict(fte), wte) - wr2(y_te_, p_te, wte), m
+        mk = np.ones(len(y_te_), bool) if mask is None else mask
+        q = p_te + m.predict(fte)
+        return wr2(y_te_[mk], q[mk], wte[mk]) - wr2(y_te_[mk], p_te[mk], wte[mk]), m
 
     def permuted():
         sh = roles.assign(Arketip=roles.groupby("Season")["Arketip"].transform(lambda s: rng.permutation(s.values)))
@@ -215,6 +217,43 @@ def main() -> None:
     null = np.array([comp_gain(permuted())[0] for _ in range(a.B)])
     pd.DataFrame({"kazanc": null}).to_csv(PROC / f"lineup_null_{tag}.csv", index=False)
 
+    # 3a. Sızıntı denetimleri (hakem turu 2, N3):
+    #  (i) test sezonlarında roller test verisinden değil, oyuncunun eğitim dönemindeki son rolünden alınır (yoksa 0);
+    #  (ii) yalnızca 10 oyuncunun tamamı eğitimde görülmüş test segmentleri.
+    last_role = (roles[roles["Season"] <= 2022].sort_values("Season").groupby("Player_ID")["Arketip"].last().to_dict())
+
+    def prior_map(rmap):
+        out_ = {kk: v for kk, v in rmap.items() if kk[1] <= 2022}
+        last = {}
+        for (p_, s_), v in sorted(((kk, v) for kk, v in rmap.items() if kk[1] <= 2022), key=lambda t: t[0][1]):
+            last[p_] = v
+        for lu, s_ in zip(pd.concat([te["LA"], te["LB"]]), pd.concat([te["Season"], te["Season"]])):
+            for p_ in lu:
+                if p_ in last:
+                    out_[(p_, s_)] = last[p_]
+        return out_
+
+    role_prior = prior_map(role)
+    all_seen = np.array([all(p_ in seen for p_ in la) and all(p_ in seen for p_ in lb) for la, lb in zip(te["LA"], te["LB"])])
+    NB = min(a.B, 500)
+    leak = {}
+    for name_, rmap_, mask_, mk_perm in (
+            ("onceki_rol", role_prior, None, lambda: prior_map(permuted())),
+            ("hepsi_gorulmus", role, all_seen, permuted)):
+        g_c = comp_gain(rmap_, cols_=counts, mask=mask_)[0]
+        g_t = comp_gain(rmap_, mask=mask_)[0]
+        nc, nt = [], []
+        for _ in range(NB):
+            pm = mk_perm()
+            nc.append(comp_gain(pm, cols_=counts, mask=mask_)[0])
+            nt.append(comp_gain(pm, mask=mask_)[0])
+        leak[name_] = {"sayilar_kazanc": round(float(g_c), 5),
+                       "sayilar_p": round(float((1 + (np.array(nc) >= g_c).sum()) / (1 + NB)), 4),
+                       "toplam_kazanc": round(float(g_t), 5),
+                       "toplam_p": round(float((1 + (np.array(nt) >= g_t).sum()) / (1 + NB)), 4),
+                       "test_segment_payi": round(float(1.0 if mask_ is None else mask_.mean()), 3), "B": NB}
+        print("sızıntı", name_, leak[name_], flush=True)
+
     # 3b. Güç simülasyonu: en sık görülen iki farklı rolün birlikteliğine δ puan/100 hücum sinerji eklenir
     power = {}
     if a.power:
@@ -223,19 +262,31 @@ def main() -> None:
         target = max(occ, key=occ.get)
         j_ = k + pairs_all.index(target)
         inj_tr, inj_te = role_features(tr, role, k)[:, j_], role_features(te, role, k)[:, j_]
+        F_tr, F_te = role_features(tr, role, k), role_features(te, role, k)
+        gi_tr = {g: np.where(tr["game"].values == g)[0] for g in tr["game"].unique()}
+        g_tr = np.array(list(gi_tr))
         for delta in POWER_DELTAS:
             hits = 0
             for _ in range(a.power):
-                noise_tr = tr["y"].values + delta * inj_tr
-                noise_te = yte + delta * inj_te
-                m_ = Ridge(alpha=lam).fit(xtr, noise_tr, sample_weight=tr["poss"].values)
-                p_tr_, p_te_ = m_.predict(xtr), m_.predict(player_matrix(te, cols_tr, seen))
-                g_obs = comp_gain(role, noise_tr, noise_te, p_tr_, p_te_)[0]
-                g_null = [comp_gain(permuted(), noise_tr, noise_te, p_tr_, p_te_)[0] for _ in range(a.power_B)]
-                hits += (1 + sum(g >= g_obs for g in g_null)) / (1 + a.power_B) < 0.05
+                ii = np.concatenate([gi_tr[g] for g in rng.choice(g_tr, len(g_tr))])
+                y_tr_ = tr["y"].values[ii] + delta * inj_tr[ii]
+                y_te_ = yte + delta * inj_te
+                w_tr_ = tr["poss"].values[ii]
+                m_ = Ridge(alpha=lam).fit(xtr[ii], y_tr_, sample_weight=w_tr_)
+                r_tr, p_te_ = y_tr_ - m_.predict(xtr[ii]), m_.predict(player_matrix(te, cols_tr, seen))
+                mc = Ridge(alpha=comp_alpha).fit(F_tr[ii][:, counts], r_tr, sample_weight=w_tr_)
+                mf = Ridge(alpha=comp_alpha).fit(F_tr[ii], r_tr, sample_weight=w_tr_)
+                pc_, pf_ = p_te_ + mc.predict(F_te[:, counts]), p_te_ + mf.predict(F_te)
+                incs = []
+                for _ in range(a.power_B):
+                    jj = np.concatenate([g_idx0[g] for g in rng.choice(games0, len(games0))])
+                    incs.append(wr2(y_te_[jj], pf_[jj], wte[jj]) - wr2(y_te_[jj], pc_[jj], wte[jj]))
+                hits += np.percentile(incs, 2.5) > 0
             power[str(delta)] = round(hits / a.power, 2)
             print("güç", target, delta, power[str(delta)], flush=True)
-        power = {"cift": list(target), "guc": power, "sim": a.power, "B": a.power_B}
+        power = {"cift": list(target), "guc": power, "sim": a.power, "B": a.power_B,
+                 "olcut": "çift artışının maç-bootstrap GA alt sınırı > 0; eğitim maçları her tekrarda yeniden örneklenir",
+                 "cift_test_frekansi": round(float(np.mean(inj_te != 0)), 3)}
 
     pairs = list(combinations_with_replacement(range(1, k + 1), 2))
     names = [f"n{r}" for r in range(1, k + 1)] + [f"n{x}×n{y}" for x, y in pairs]
@@ -274,6 +325,7 @@ def main() -> None:
         "guc": power,
         "tahmin_SD_test": pred_sd,
         "ayristirma": decomp,
+        "sizinti_denetimi": leak,
         "korelasyon_RAPM_VAL40": round(float(j["RAPM"].corr(j["VAL40"])), 3),
         "eta2_rol": {"RAPM": round(eta2("RAPM"), 3), "VAL40": round(eta2("VAL40"), 3)},
         "rol_ortalamalari": j.groupby("Arketip")[["RAPM", "VAL40"]].mean().round(2).to_dict(orient="index"),

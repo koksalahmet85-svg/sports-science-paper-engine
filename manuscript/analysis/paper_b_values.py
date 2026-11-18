@@ -87,13 +87,16 @@ def main() -> None:
         return (r0 - r1) / r0, beta
 
     cond = {}
+    roles_sorted = sorted(d["rol"].unique())
     for col in ("PIR40", "VAL40"):
         pe, beta = partial_eta(d, col)
-        bs = [partial_eta(d.iloc[rng.choice(idx, len(idx))], col)[0] for _ in range(a.B)]
-        roles_sorted = sorted(d["rol"].unique())
+        bs = [partial_eta(d.iloc[rng.choice(idx, len(idx))], col) for _ in range(a.B)]
+        bb = np.array([b_[1][2:] for b_ in bs])
         adj = {str(int(roles_sorted[0])): 0.0, **{str(int(r)): round(float(b), 2) for r, b in zip(roles_sorted[1:], beta[2:])}}
-        cond[col] = {"kismi_eta2": round(pe, 3), "GA95": [round(float(x), 3) for x in np.percentile(bs, [2.5, 97.5])],
-                     "rol_farki_RAPM_sabit": adj}
+        adj_ci = {str(int(r)): [round(float(x), 2) for x in np.percentile(bb[:, i], [2.5, 97.5])]
+                  for i, r in enumerate(roles_sorted[1:])}
+        cond[col] = {"kismi_eta2": round(pe, 3), "GA95": [round(float(x), 3) for x in np.percentile([b_[0] for b_ in bs], [2.5, 97.5])],
+                     "rol_farki_RAPM_sabit": adj, "rol_farki_GA95": adj_ci}
     out["RAPM_kosullu"] = cond
 
     # (b) Yarı-yarıya güvenirlik (çift / tek maç kodu) ve güvenirliğe göre düzeltilmiş η²
@@ -113,6 +116,25 @@ def main() -> None:
         r = float(j2[f"{col}_c"].corr(j2[f"{col}_t"]))
         rel[col] = {"r_yari": round(r, 3), "spearman_brown": round(2 * r / (1 + r), 3)}
     out["guvenirlik"] = {"oyuncu_N": int(len(j2)), **rel}
+    # (b2) Ölçüm hatasına karşı denetim: iki aşamalı EKK — PIR40 (tüm maçlar) ~ rol + RAPM_çift, RAPM_tek araç değişken.
+    #      Rol katsayıları "aynı gerçek RAPM düzeyinde" rol farklarıdır; oyuncu bootstrap %95 GA.
+    j3 = j2.join(d[["PIR40", "rol"]], how="inner")
+    def tsls(df):
+        D = pd.get_dummies(df["rol"].astype(int)).reindex(columns=roles_sorted, fill_value=0).to_numpy(float)[:, 1:]
+        Z = np.column_stack([np.ones(len(df)), df["RAPM_t"], D])
+        rhat = Z @ np.linalg.lstsq(Z, df["RAPM_c"], rcond=None)[0]
+        X = np.column_stack([np.ones(len(df)), rhat, D])
+        return np.linalg.lstsq(X, df["PIR40"], rcond=None)[0]
+    b_iv = tsls(j3)
+    ii3 = np.arange(len(j3))
+    bs_iv = np.array([tsls(j3.iloc[rng.choice(ii3, len(ii3))]) for _ in range(a.B)])
+    out["olcum_hatasi_denetimi"] = {
+        "yontem": "2SLS: PIR40 ~ rol + RAPM(çift maçlar), araç RAPM(tek maçlar)", "oyuncu_N": int(len(j3)),
+        "RAPM_egimi": round(float(b_iv[1]), 2), "RAPM_egimi_GA95": [round(float(x), 2) for x in np.percentile(bs_iv[:, 1], [2.5, 97.5])],
+        "rol_farki": {str(int(r)): round(float(b), 2) for r, b in zip(roles_sorted[1:], b_iv[2:])},
+        "rol_farki_GA95": {str(int(r)): [round(float(x), 2) for x in np.percentile(bs_iv[:, 2 + i], [2.5, 97.5])]
+                           for i, r in enumerate(roles_sorted[1:])}}
+
     out["eta2_duzeltilmis"] = {"PIR40": round(est["PIR40"] / rel["PIR40"]["spearman_brown"], 3),
                                "RAPM": round(est["RAPM"] / max(rel["RAPM"]["spearman_brown"], 1e-6), 3)}
 
@@ -129,6 +151,15 @@ def main() -> None:
     d_alt = d.drop(columns="rol").join(main_alt)
     out["pir_bilesensiz_roller"] = {"degiskenler": list(f_alt.columns),
                                     "eta2": {m_: round(eta2(d_alt, m_), 3) for m_ in ("PIR40", "VAL40", "RAPM")}}
+    # (c2) Daha katı: yalnızca şut yeri payları + asist ağı (kullanım, hızlı hücum, ikinci şans oranları da çıkarılır)
+    f_s = f_alt.drop(columns=["USG_pct", "fastbreak_rate", "second_chance_rate"])
+    z_s = zscore(f_s, ps, fit)
+    lab_s = gmm(z_s[fit].to_numpy(), K, res["roles_final"]["kovaryans"]).predict(z_s.to_numpy()) + 1
+    main_s = (ps[["Player_ID", "MIN"]].assign(rol=lab_s).groupby(["Player_ID", "rol"])["MIN"].sum().reset_index()
+              .sort_values("MIN").groupby("Player_ID").tail(1).set_index("Player_ID")["rol"])
+    d_s = d.drop(columns="rol").join(main_s)
+    out["pir_bilesensiz_roller_kati"] = {"degiskenler": list(f_s.columns),
+                                         "eta2": {m_: round(eta2(d_s, m_), 3) for m_ in ("PIR40", "VAL40", "RAPM")}}
 
     res = json.loads(RESULTS.read_text())
     res["paper_b_values"] = out

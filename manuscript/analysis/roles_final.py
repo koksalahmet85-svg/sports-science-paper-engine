@@ -16,7 +16,7 @@ Değişiklikler (archetypes_v2.py'ye göre):
 
 Çıktılar: data/processed/roles_final_K{4,5}.csv, results.json["roles_final"].
 
-    python manuscript/analysis/roles_final.py --B 200
+    python manuscript/analysis/roles_final.py --B 500
 """
 
 from __future__ import annotations
@@ -90,7 +90,7 @@ def player_boot_jaccard(z, players, k, cov, B, rng) -> np.ndarray:
         for c in range(k):
             a = set(np.where(lo == c)[0])
             scores[b, c] = max((len(a & s) / len(a | s)) if (a | s) else 0 for s in sets_b)
-    return scores.mean(axis=0)
+    return scores
 
 
 def new_player_ari(z, players, seasons, k, cov) -> tuple[float, int]:
@@ -107,8 +107,8 @@ def cramers_v(t: pd.DataFrame) -> float:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--B", type=int, default=200)
-    ap.add_argument("--Bscan", type=int, default=100)
+    ap.add_argument("--B", type=int, default=500)
+    ap.add_argument("--Brob", type=int, default=100)
     a = ap.parse_args()
     rng = np.random.default_rng(SEED)
     ps = pd.read_csv(PROC / "player_season.csv.gz")
@@ -126,11 +126,13 @@ def main() -> None:
         for k in range(4, 9):
             m = gmm(z, k, cov)
             lab = m.predict(z)
-            jac = player_boot_jaccard(z, players[fit], k, cov, a.Bscan, rng)
+            sc = player_boot_jaccard(z, players[fit], k, cov, a.B, rng)
+            jac = sc.mean(axis=0)
             ari, n_new = new_player_ari(z, players[fit], seasons[fit], k, cov)
             scan[f"{cov}_K{k}"] = {"BIC": round(float(m.bic(z)), 1), "silhouette": round(float(silhouette_score(z, lab)), 3),
                                    "jaccard_ort": round(float(jac.mean()), 3), "jaccard_min": round(float(jac.min()), 3),
                                    "jaccard_kume": [round(float(x), 3) for x in jac],
+                                   "jaccard_ort_MC_SH": round(float(sc.mean(axis=1).std(ddof=1) / np.sqrt(a.B)), 4),
                                    "yeni_oyuncu_ARI": round(ari, 3), "yeni_oyuncu_N": n_new,
                                    "en_kucuk_kume": int(np.bincount(lab, minlength=k).min())}
             print(cov, k, {kk: v for kk, v in scan[f"{cov}_K{k}"].items() if kk != "jaccard_kume"}, flush=True)
@@ -160,7 +162,7 @@ def main() -> None:
         for _ in range(a.B):
             idx = np.concatenate([rows_of[p] for p in rng.choice(up, len(up))])
             boot_v.append(cramers_v(pd.crosstab(lab[idx], bio["position"].to_numpy()[idx])))
-        jac = player_boot_jaccard(z, players[fit], k, cov, a.B, rng)
+        jac = np.array(scan[f"{cov}_K{k}"]["jaccard_kume"])   # tek bootstrap koşusu: tarama ile aynı değerler
         finals[f"K{k}"] = {
             "N": int(len(out)), "kume_N": {int(i): int(n) for i, n in zip(*np.unique(lab, return_counts=True))},
             "jaccard_kume": [round(float(x), 3) for x in jac], "jaccard_ort": round(float(jac.mean()), 3),
@@ -182,7 +184,7 @@ def main() -> None:
     for name, s in sets.items():
         zz = zscore(raw_features(ps, s), ps, fit)[fit].to_numpy()
         for k in (4, 5):
-            jac = player_boot_jaccard(zz, players[fit], k, cov, 50, rng)
+            jac = player_boot_jaccard(zz, players[fit], k, cov, a.Brob, rng).mean(axis=0)
             robust[f"{name}_K{k}"] = {"degisken_N": int(zz.shape[1]), "jaccard_ort": round(float(jac.mean()), 3),
                                       "jaccard_min": round(float(jac.min()), 3),
                                       "nihai_ile_ARI": round(float(adjusted_rand_score(base_lab[k], gmm(zz, k, cov).predict(zz))), 3)}
@@ -191,7 +193,7 @@ def main() -> None:
     res = json.loads(RESULTS.read_text())
     res["roles_final"] = {"kovaryans": cov, "K": K, "fit_N": int(fit.sum()), "fit_oyuncu_N": int(len(np.unique(players[fit]))),
                           "degiskenler": list(raw.columns), "eksik_pay": {c: float(v) for c, v in missing.items() if v > 0},
-                          "B": a.B, "Bscan": a.Bscan, "tarama": scan, "nihai": finals, "duyarlilik": robust}
+                          "B": a.B, "Brob": a.Brob, "tarama": scan, "nihai": finals, "duyarlilik": robust}
     RESULTS.write_text(json.dumps(res, indent=2, ensure_ascii=False))
 
 

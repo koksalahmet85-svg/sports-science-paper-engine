@@ -73,6 +73,12 @@ def main() -> None:
     st, pg = load(), pd.read_csv(PROC / "player_game.csv.gz")
     roles = pd.read_csv(PROC / "roles_final_K5.csv")
     role = dict(zip(zip(roles["Player_ID"], roles["Season"]), roles["Arketip"]))
+    # İleriye bakmayı önlemek için kısıt rolleri: oyuncunun önceki sezonlardaki son rolü; yoksa (yeni oyuncu) o sezonun rolü
+    srt = roles.sort_values("Season")
+    prev_role, last_seen, n_cur, n_all = {}, {}, 0, 0
+    for p_, s_, r_ in zip(srt["Player_ID"], srt["Season"], srt["Arketip"]):
+        prev_role[(p_, s_)] = last_seen.get(p_, r_)
+        last_seen[p_] = r_
     seg_rows, pick_rows = [], []
 
     for s in sorted(st["Season"].unique()):
@@ -94,7 +100,10 @@ def main() -> None:
         picks = {}
         for team, g in mins[mins["MIN"] >= ROSTER_MIN].groupby("Team"):
             ids = g["Player_ID"].tolist()
-            rl = np.array([role.get((p, s), 0) for p in ids])
+            rl = np.array([prev_role.get((p, s), 0) for p in ids])
+            n_all += len(ids)
+            n_cur += sum(1 for p in ids if (p, s) in prev_role and all(x[0] != p or x[1] >= s for x in ()) and
+                         prev_role[(p, s)] == role.get((p, s)) and not any((p, s2) in role for s2 in range(2016, s)))
             for metric in ("PIR40_sezon", "VAL40_sezon", "RAPM", "DAKIKA"):  # DAKIKA: en çok süre alan beşli (taban)
                 v = np.array([value[metric].get(p, np.nan) for p in ids])
                 ok = ~np.isnan(v)
@@ -135,7 +144,9 @@ def main() -> None:
         lo, hi = np.nanpercentile(bs, [2.5, 97.5], axis=0)
         return est, lo, hi
 
-    out = {"segment_N": int(len(d)), "takim_sezon_N": int(len(clusters)), "B": a.B, "ev_sahibi_avantaji": round(home_adv, 2)}
+    out = {"kisit_rolu": "önceki sezon rolü (yeni oyuncularda o sezonun rolü)",
+           "kisit_rolu_cari_sezondan_pay": round(n_cur / max(n_all, 1), 3),
+           "segment_N": int(len(d)), "takim_sezon_N": int(len(clusters)), "B": a.B, "ev_sahibi_avantaji": round(home_adv, 2)}
 
     # Sınama 1
     def slopes(x, metrics=METRICS, common=False):
@@ -194,6 +205,34 @@ def main() -> None:
     dnames = [k_[5:] for k_ in pcols if "DAKIKA" not in k_]
     out["ilp_antrenore_gore_fark"] = {k_: {"fark": round(float(e), 2), "GA95": [round(float(l), 2), round(float(h), 2)]}
                                      for k_, e, l, h in zip(dnames, est_all[len(pcols):], lo_all[len(pcols):], hi_all[len(pcols):])}
+    # Doğrudan eşleştirilmiş karşılaştırma: aynı takım-sezonda yalnız ILP beşlisini içeren ve yalnız antrenör beşlisini
+    # içeren segmentler (ikisini birden içerenler dışarıda); takım-sezon farkları iki grubun harmonik hücum ağırlığıyla ortalanır.
+    def direct(x):
+        res, meta = [], []
+        for k_ in dnames:
+            rule = k_.rsplit("_", 1)[1]
+            fo = x[f"pick_{k_}"].fillna(False).astype(bool).values
+            fc = x[f"pick_DAKIKA_{rule}"].fillna(False).astype(bool).values
+            o, c = fo & ~fc, fc & ~fo
+            g = pd.DataFrame({"ts": x["ts"].values, "yp": x["y_adj"].values * x["poss"].values, "p": x["poss"].values})
+            go, gc = g[o].groupby("ts")[["yp", "p"]].sum(), g[c].groupby("ts")[["yp", "p"]].sum()
+            j = go.join(gc, lsuffix="_o", rsuffix="_c", how="inner")
+            if len(j) == 0:
+                res.append(np.nan); meta.append((0, np.nan)); continue
+            diff = j["yp_o"] / j["p_o"] - j["yp_c"] / j["p_c"]
+            w = 1 / (1 / j["p_o"] + 1 / j["p_c"])
+            res.append(float(np.average(diff, weights=w)))
+            both = (fo & fc).sum() / max(fo.sum(), 1)
+            meta.append((len(j), both))
+        return np.array(res), meta
+
+    def direct_est(x):
+        return direct(x)[0]
+    est_d, lo_d, hi_d = boot(direct_est)
+    meta = direct(d)[1]
+    out["dogrudan_eslestirilmis_fark"] = {k_: {"fark": round(float(e), 2), "GA95": [round(float(l), 2), round(float(h), 2)],
+                                               "takim_sezon": int(mt[0]), "iki_gruba_da_giren_pay": round(float(mt[1]), 3)}
+                                          for k_, e, l, h, mt in zip(dnames, est_d, lo_d, hi_d, meta)}
     pr = pd.DataFrame(pick_rows)
     out["antrenor_beslisiyle_ortak_oyuncu"] = pr.groupby(["metric", "rule"])["overlap"].mean().round(2).rename(
         lambda t: t, axis=0).to_dict() if len(pr) else {}

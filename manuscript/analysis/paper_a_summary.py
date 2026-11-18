@@ -47,7 +47,7 @@ def main() -> None:
            "games_per_season_min": int(games.min()), "games_per_season_max": int(games.max()),
            "player_games": int(len(pg)), "player_seasons": int(len(ps)), "players": int(ps["Player_ID"].nunique()),
            "fit_player_seasons": int((ps["MIN"] >= 400).sum()),
-           "stints": int(len(full)), "stints_model": int((poss >= 1).sum()),
+           "stints": int(len(full)), "stints_model": int((((st["poss_A"] + st["poss_B"]) / 2 >= 1) & st["full"]).sum()),  # lineup_model.load() ile aynı tanım
            "stint_minutes_covered": round(float(full["dur"].sum() / st["dur"].sum()), 3),
            "shots": int(pd.read_csv(PROC / "shot_profile.csv.gz")["shots"].sum()),
            "assist_edges": int(len(pd.read_csv(PROC / "assist_edges.csv.gz"))),
