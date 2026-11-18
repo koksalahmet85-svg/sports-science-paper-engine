@@ -20,7 +20,8 @@ HERE = Path(__file__).parent
 PROC = HERE.parents[1] / "data" / "processed"
 FIG = HERE.parent / "figures"
 R = json.loads((HERE / "results.json").read_text())
-ROLE = json.loads((HERE / "role_names.json").read_text())
+KM = R["roles_final"]["K"]
+ROLE = json.loads((HERE / ("role_names.json" if KM == 5 else f"role_names_K{KM}.json")).read_text())
 LABEL = {"3PAr": "3-pt attempt rate", "FTr": "Free-throw rate", "USG_pct": "Usage %", "AST_pct": "Assist %",
          "ORB_pct": "Off. rebound %", "DRB_pct": "Def. rebound %", "STL_pct": "Steal %", "BLK_pct": "Block %",
          "TOV_pct": "Turnover %", "FD_pct": "Fouls drawn", "PF_pct": "Fouls committed", "rim_rate": "Rim attempt share",
@@ -51,7 +52,7 @@ def fig1() -> None:
 
 
 def fig2() -> None:
-    prof = pd.DataFrame(R["roles_final"]["nihai"]["K5"]["profil_z"]).T
+    prof = pd.DataFrame(R["roles_final"]["nihai"][f"K{KM}"]["profil_z"]).T
     prof.index = prof.index.astype(str)
     keep = []
     for r in prof.index:
@@ -72,8 +73,8 @@ def fig2() -> None:
 
 
 def fig3() -> None:
-    null = pd.read_csv(PROC / "lineup_null_roles_final_K5.csv")["kazanc"] * 100
-    obs = R["lineup_model_roles_final_K5"]["rol_bilesimi"]["kazanc"] * 100
+    null = pd.read_csv(PROC / f"lineup_null_roles_final_K{KM}.csv")["kazanc"] * 100
+    obs = R[f"lineup_model_roles_final_K{KM}"]["rol_bilesimi"]["kazanc"] * 100
     fig, ax = plt.subplots(figsize=(5.5, 3.4))
     ax.hist(null, bins=40, color="0.75", edgecolor="white", label="Permuted role labels")
     ax.axvline(obs, color="C3", lw=2, label="Observed role labels")

@@ -11,32 +11,42 @@ keywords: [basketball, cluster analysis, player roles, lineup, plus-minus, EuroL
 import json, pathlib
 import pandas as pd
 R = json.loads(pathlib.Path("analysis/results.json").read_text())
-ROLE = json.loads(pathlib.Path("analysis/role_names.json").read_text())
-ROLE4 = json.loads(pathlib.Path("analysis/role_names_K4.json").read_text())
 A, RF = R["paper_a"], R["roles_final"]
-F5, F4 = RF["nihai"]["K5"], RF["nihai"]["K4"]
 SC = RF["tarama"]
 COV = RF["kovaryans"]
-M5, M4 = R["lineup_model_roles_final_K5"], R["lineup_model_roles_final_K4"]
-D5 = M5["ayristirma"]
+KM = RF["K"]; KA = 5 if KM == 4 else 4                      # ana ve alternatif rol sayısı (karar kuralından)
+WORD = {4: "four", 5: "five", 6: "six", 7: "seven"}
+KW, KAW = WORD[KM], WORD[KA]
+_names = lambda k: json.loads(pathlib.Path("analysis/" + ("role_names.json" if k == 5 else f"role_names_K{k}.json")).read_text())
+ROLE, ROLEA = _names(KM), _names(KA)
+FM, FA = RF["nihai"][f"K{KM}"], RF["nihai"][f"K{KA}"]
+MM, MA = R[f"lineup_model_roles_final_K{KM}"], R[f"lineup_model_roles_final_K{KA}"]
+MT = R["lineup_model_thesis_archetypes"]
+DM, DA = MM["ayristirma"], MA["ayristirma"]
+LK = MM["sizinti_denetimi"]
 F0T, F2T = R["formula_test_corrected_min0_tezarketip"], R["formula_test_corrected_min2_tezarketip"]
 n = lambda x: f"{x:,}"
 pct = lambda x, d=0: f"{100 * x:.{d}f}%"
 f2 = lambda x: f"{x:.2f}"
+f3 = lambda x: f"{x:.3f}"
+pp3 = lambda x: f"{100 * x:.3f}"
 def fp(p):
     return "< .001" if p < 0.001 else f"= {p:.3f}".replace("0.", ".")
-def share(k, role, pos):
-    t = F5["pozisyon"][str(role)]
+rid = {v: k for k, v in ROLE.items()}                         # rol adı → etiket
+def share(role_name, pos, F=None, names=None):
+    F, names = (F or FM), (names or ROLE)
+    k = {v: kk for kk, v in names.items()}[role_name]
+    t = F["pozisyon"][k]
     return t.get(pos, 0) / sum(t.values())
-J5 = F5["jaccard_kume"]
-stable_roles = sum(j >= 0.75 for j in J5)
-weakest = min(range(len(J5)), key=lambda i: J5[i]) + 1
-P = M5["guc"]
+JM = FM["jaccard_kume"]
+stable_roles = sum(j >= 0.75 for j in JM)
+weakest = min(range(len(JM)), key=lambda i: JM[i]) + 1
+P = MM["guc"]
 pair = " × ".join(ROLE[str(i)].lower() for i in P["cift"])
 def _term(t):
     a = t.replace("n", "").split("×")
     return " + ".join(ROLE[x].lower() for x in a) if len(a) == 2 else ROLE[a[0]].lower() + " count"
-_pos = [(t, v) for t, v in M5["rol_bilesimi"]["en_buyuk_katsayilar"].items() if v > 0 and "×" in t][:3]
+_pos = [(t, v) for t, v in MM["rol_bilesimi"]["en_buyuk_katsayilar"].items() if v > 0 and "×" in t][:3]
 TOP = "; ".join(f"{_term(t)} ({v:+.2f})" for t, v in _pos)
 ```
 

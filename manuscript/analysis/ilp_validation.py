@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -35,7 +36,13 @@ from lineup_model import PROC, RESULTS, SEED, columns, load, player_matrix
 
 LAMBDA = 4000          # lineup_model.py'de çapraz doğrulamayla seçilen değer
 ROSTER_MIN = 100       # ILP aday havuzu: ilk yarıda en az bu kadar dakika
-BALLH, BIGS, RIMP = {5}, {2, 4}, {4}   # roles_final_K5.csv: 5 Top Taşıyıcı, 2 İç Saha Uzunu, 4 Boyalı Alan Koruyucusu
+# Rol kısıtları, nihai K'nın rol adlarından (role_names.json = K5, role_names_K4.json = K4) türetilir
+_R = json.loads(RESULTS.read_text())
+K_ROLES = _R["roles_final"]["K"]
+_N = json.loads((Path(__file__).parent / ("role_names.json" if K_ROLES == 5 else f"role_names_K{K_ROLES}.json")).read_text())
+BALLH = {int(k) for k, v in _N.items() if v == "Ball handler"}
+RIMP = {int(k) for k, v in _N.items() if v == "Rim protector"}
+BIGS = RIMP | {int(k) for k, v in _N.items() if v == "Interior big"}
 METRICS = ["PIR40_sezon", "VAL40_sezon", "PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]
 COMMON = ["PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]   # ortak alt küme: hepsinin tanımlı olduğu segmentler
 
@@ -71,7 +78,7 @@ def main() -> None:
     a = ap.parse_args()
     rng = np.random.default_rng(SEED)
     st, pg = load(), pd.read_csv(PROC / "player_game.csv.gz")
-    roles = pd.read_csv(PROC / "roles_final_K5.csv")
+    roles = pd.read_csv(PROC / f"roles_final_K{K_ROLES}.csv")
     role = dict(zip(zip(roles["Player_ID"], roles["Season"]), roles["Arketip"]))
     # İleriye bakmayı önlemek için kısıt rolleri: oyuncunun önceki sezonlardaki son rolü; yoksa (yeni oyuncu) o sezonun rolü
     srt = roles.sort_values("Season")
@@ -144,7 +151,7 @@ def main() -> None:
         lo, hi = np.nanpercentile(bs, [2.5, 97.5], axis=0)
         return est, lo, hi
 
-    out = {"kisit_rolu": "önceki sezon rolü (yeni oyuncularda o sezonun rolü)",
+    out = {"K": K_ROLES, "kisit_rolu": "önceki sezon rolü (yeni oyuncularda o sezonun rolü)",
            "kisit_rolu_cari_sezondan_pay": round(n_cur / max(n_all, 1), 3),
            "segment_N": int(len(d)), "takim_sezon_N": int(len(clusters)), "B": a.B, "ev_sahibi_avantaji": round(home_adv, 2)}
 

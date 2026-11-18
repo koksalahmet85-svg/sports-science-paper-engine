@@ -18,7 +18,8 @@ import numpy as np
 HERE = Path(__file__).parent
 FIG = HERE.parents[1] / "manuscript_b" / "figures"
 R = json.loads((HERE / "results.json").read_text())
-ROLE_NAMES = json.loads((HERE / "role_names.json").read_text())
+KM = R["roles_final"]["K"]
+ROLE_NAMES = json.loads((HERE / ("role_names.json" if KM == 5 else f"role_names_K{KM}.json")).read_text())
 METRIC = {"PIR40": "PIR per 40 min", "VAL40": "VAL per 40 min", "RAPM": "RAPM"}
 SLOPE = {"PIR40_sezon": "PIR40 (first half)", "VAL40_sezon": "VAL40 (first half)", "PIR40_havuz": "PIR40 (all prior data)",
          "VAL40_havuz": "VAL40 (all prior data)", "RAPM": "RAPM (all prior data)", "DAKIKA": "Minutes (first half)"}
