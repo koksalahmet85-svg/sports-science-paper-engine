@@ -1,5 +1,5 @@
 ---
-title: "Functional player roles in EuroLeague basketball: stability, positional overlap and no evidence of role synergy in lineup performance"
+title: "Functional player roles in EuroLeague basketball: stability, positional overlap and no robust added value for lineup performance beyond player quality"
 author:
   - name: Ahmet Köksal
     corresponding: true
@@ -57,11 +57,12 @@ TOP = "; ".join(f"{_term(t)} ({v:+.2f})" for t, v in _pos)
 print(f"**Purpose:** Data-driven player roles are increasingly used to describe positionless basketball and to guide lineup construction, but the stability of such roles and their value for explaining lineup performance beyond player quality are rarely tested. "
 f"**Methods:** All EuroLeague games from 2016–17 to 2024–25 ({n(A['games'])} games) were analysed using official box scores, play-by-play, shot coordinates and assist links. "
 f"Role variables (possession shares with on-court denominators, shot profile and assist-network indicators) were clustered with Gaussian mixture models in {n(RF['fit_N'])} player-seasons; the number of roles was chosen by player-level bootstrap stability. "
-f"Role composition was then tested against lineup net rating, with regularised adjusted plus-minus (RAPM) controlling for player quality, in an out-of-time validation with a role-label permutation test. "
-f"**Results:** Five roles were retained (mean bootstrap Jaccard {f2(F5['jaccard_ort'])}; {stable_roles} of 5 roles ≥ 0.75), whereas six or more roles were unstable, as was a previously used seven-cluster solution (mean Jaccard {f2(A['thesis_ward7_jaccard_mean'])}). "
-f"Ball handlers and rim protectors were almost exclusively guards and centres, respectively, whereas wing, stretch-forward and interior-big roles drew on two positions (Cramér's V = {f2(F5['cramers_v'])}). "
-f"Adding role composition to RAPM improved out-of-time prediction more than permuted role labels did (p {fp(M5['rol_bilesimi']['p'])}), but the gain came from the number of players in each role (p {fp(D5['sayilar_p'])}), not from role pairings, and its effects were about a quarter as large as differences in player quality. "
-f"**Conclusions:** Five functional roles can be recovered reproducibly from open EuroLeague data. Role labels carry a small amount of information about lineup performance beyond regularised player ratings, but there was no evidence of synergy between roles.")
+f"Role composition was tested against lineup net rating out of time (training 2016–2022, test 2023–2024), with regularised adjusted plus-minus (RAPM) controlling for player quality, a role-label permutation test, leakage checks and a power simulation. "
+f"**Results:** Four roles were retained (mean bootstrap Jaccard {f2(FM['jaccard_ort'])}); a five-role solution was nearly as stable ({f2(FA['jaccard_ort'])}), whereas six or more roles were unstable, as was a previously used seven-cluster solution ({f2(A['thesis_ward7_jaccard_mean'])}). "
+f"Ball handlers and rim protectors were {pct(share('Ball handler', 'Guard'))} guards and {pct(share('Rim protector', 'Center'))} centres, whereas interior bigs combined centres and forwards (Cramér's V = {f2(FM['cramers_v'])}). "
+f"With roles estimated in each season, role counts improved out-of-time prediction beyond RAPM (permutation p {fp(DM['sayilar_p'])}), but not when test-season roles were restricted to information available in training (p {fp(LK['onceki_rol']['sayilar_p'])}). "
+f"Pairwise role terms added no detectable information, but power to detect synergies of up to 1 point per 100 possessions was at most {pct(max(P['guc'].values()))}. "
+f"**Conclusions:** Four to five functional roles can be recovered reproducibly from open EuroLeague data and are useful for describing players. There was no robust evidence that role composition adds to lineup performance beyond individual player quality, and small synergies could be neither detected nor excluded.")
 ```
 
 {{< include sections/introduction.qmd >}}

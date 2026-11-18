@@ -2,11 +2,11 @@
 
 ## Number and stability of roles
 
-The `{python} COV` covariance structure had the lower information criterion and was retained. Player-level bootstrap stability was high for four and five roles and fell markedly for six or more, where at least one cluster dissolved (@fig-stab, @tbl-stab). Four and five roles had similar mean stability, and the five-role solution agreed better between models fitted to different periods for players first seen after 2019, so five roles were retained under the pre-specified rule. The seven-cluster Ward solution from the thesis was not stable (mean Jaccard `{python} f2(A["thesis_ward7_jaccard_mean"])`, minimum `{python} f2(A["thesis_ward7_jaccard_min"])`). Silhouette coefficients were low for all solutions, so the roles are best read as dense regions of a continuous space rather than sharply separated groups.
+The `{python} COV` covariance structure had the lower information criterion and was retained. Player-level bootstrap stability was high for four and five roles and fell markedly for six or more, where at least one cluster dissolved (@fig-stab, @tbl-stab). Four roles had the highest mean stability (`{python} f3(SC[f"{COV}_K4"]["jaccard_ort"])` vs `{python} f3(SC[f"{COV}_K5"]["jaccard_ort"])` for five roles), a difference larger than the 0.02 margin of the decision rule and than the Monte Carlo error, so `{python} KW` roles were retained; the `{python} KAW`-role solution, which agreed better between periods for new players (adjusted Rand index `{python} f2(SC[f"{COV}_K{KA}"]["yeni_oyuncu_ARI"])` vs `{python} f2(SC[f"{COV}_K{KM}"]["yeni_oyuncu_ARI"])`), is reported as a finer alternative. The information criterion continued to improve slightly beyond five roles, so it did not identify a number of roles on its own. The seven-cluster Ward solution from the thesis was not stable (mean Jaccard `{python} f2(A["thesis_ward7_jaccard_mean"])`, minimum `{python} f2(A["thesis_ward7_jaccard_min"])`). Silhouette coefficients were low for all solutions, so the roles are best read as dense regions of a continuous space rather than sharply separated groups.
 
 ```{python}
 #| label: tbl-stab
-#| tbl-cap: "Stability and fit decline beyond five roles (Gaussian mixture models, final variable set)."
+#| tbl-cap: "Stability declines beyond five roles, whereas the information criterion keeps improving slightly (Gaussian mixture models, final variable set; player-level bootstrap)."
 rows = [{"Roles": k, "BIC": f"{SC[f'{COV}_K{k}']['BIC']:,.0f}", "Silhouette": SC[f"{COV}_K{k}"]["silhouette"],
          "Mean Jaccard": SC[f"{COV}_K{k}"]["jaccard_ort"], "Minimum Jaccard": SC[f"{COV}_K{k}"]["jaccard_min"],
          "Temporal ARI (new players)": SC[f"{COV}_K{k}"]["yeni_oyuncu_ARI"]} for k in range(4, 9)]
@@ -15,34 +15,38 @@ pd.DataFrame(rows).style.hide(axis="index").format(precision=2)
 
 ![Role partitions finer than five are not stable under player-level resampling. Mean bootstrap Jaccard similarity of clusters for Gaussian mixture models with tied and diagonal covariance (final variable set) and for the previously used seven-cluster Ward solution. Dashed line: 0.75 (stable); dotted line: 0.5 (dissolved).](figures/fig1_stability.png){#fig-stab width=80%}
 
-The final solution was robust to the most informative alternative: adding height left the five-role partition largely unchanged (adjusted Rand index `{python} f2(RF["duyarlilik"]["paylar+sut+ag+boy_K5"]["nihai_ile_ARI"])`). Variable sets without assist-network information gave less stable solutions and only partly agreed with the final partition (@tbl-robust).
+Adding height left the partition largely unchanged (adjusted Rand index `{python} f2(RF["duyarlilik"][f"paylar+sut+ag+boy_K{KM}"]["nihai_ile_ARI"])`). Variable sets without assist-network information gave less stable solutions and only partly agreed with the final partition (@tbl-robust).
 
 ```{python}
 #| label: tbl-robust
-#| tbl-cap: "Assist-network variables are needed for a stable five-role partition (stability with alternative variable sets and agreement with the final partition)."
+#| tbl-cap: "Variable sets without assist-network information give less stable partitions (stability with alternative variable sets and agreement with the final partition)."
 lab = {"kutu_skoru": "Box-score rates", "kutu_skoru+sut": "Box-score rates + shot profile", "paylar+sut": "Possession shares + shot profile",
        "paylar+sut+ag (nihai)": "Possession shares + shot profile + assist network (final)", "paylar+sut+ag+boy": "Final + height"}
-rows = [{"Variable set": lab[s], "Variables": RF["duyarlilik"][f"{s}_K5"]["degisken_N"],
-         "Mean Jaccard (5 roles)": RF["duyarlilik"][f"{s}_K5"]["jaccard_ort"], "Minimum Jaccard (5 roles)": RF["duyarlilik"][f"{s}_K5"]["jaccard_min"],
-         "ARI with final (5 roles)": RF["duyarlilik"][f"{s}_K5"]["nihai_ile_ARI"]} for s in lab]
+rows = []
+for s_ in lab:
+    row = {"Variable set": lab[s_], "Variables": RF["duyarlilik"][f"{s_}_K{KM}"]["degisken_N"]}
+    for k in (KM, KA):
+        d_ = RF["duyarlilik"][f"{s_}_K{k}"]
+        row[f"Mean Jaccard ({k})"] = d_["jaccard_ort"]; row[f"Min. Jaccard ({k})"] = d_["jaccard_min"]; row[f"ARI with final ({k})"] = d_["nihai_ile_ARI"]
+    rows.append(row)
 pd.DataFrame(rows).style.hide(axis="index").format(precision=2)
 ```
 
-## The five roles
+## The roles
 
-The five roles differed mainly in shot creation, shot location and assist relationships (@fig-prof). `{python} stable_roles` of the five roles were individually stable; the `{python} ROLE[str(weakest)].lower()` role was the least stable (Jaccard `{python} f2(J5[weakest - 1])`). Posterior membership was clear for most player-seasons (`{python} pct(F5["p_max_lt_07"], 1)` had a maximum posterior probability below 0.7).
+The `{python} KW` roles — `{python} ", ".join(ROLE[k].lower() for k in sorted(ROLE, key=int))` — differed mainly in shot location, rebounding and blocking, and assist relationships (@fig-prof). `{python} stable_roles` of the `{python} KW` roles were individually stable (Jaccard ≥ 0.75); the least stable was the `{python} ROLE[str(weakest)].lower()` role (`{python} f2(JM[weakest - 1])`). Posterior membership was clear for most player-seasons (`{python} pct(FM["p_max_lt_07"], 1)` had a maximum posterior probability below 0.7). In the `{python} KAW`-role alternative, the wing/forward group split into a perimeter wing role and a stretch-forward role, and the wing role was the least stable (Jaccard `{python} f2(min(FA["jaccard_kume"]))`).
 
-![The five roles differ mainly in shot creation, shot location and assist relationships. Cells show the mean within-season z-score of selected role variables (the two highest-loading variables of each role by absolute mean) in each role.](figures/fig2_role_profiles.png){#fig-prof width=100%}
+![The roles differ mainly in shot location, rebounding and blocking, and assist relationships. Cells show the mean within-season z-score of selected role variables (the two highest-loading variables of each role by absolute mean) in each role.](figures/fig2_role_profiles.png){#fig-prof width=100%}
 
 ```{python}
 #| label: tbl-roles
-#| tbl-cap: "Each role combines a distinctive playing profile with a characteristic mix of registered positions (player-seasons, stability, height and position shares; example players are those with the most minutes)."
-roles = pd.read_csv("../data/processed/roles_final_K5.csv")
+#| tbl-cap: "Ball handlers and rim protectors are almost exclusively guards and centres, whereas the other roles combine positions (player-seasons, stability, height and position shares; example players are those with the most minutes)."
+roles = pd.read_csv(f"../data/processed/roles_final_K{KM}.csv")
 t = []
-for k in sorted(F5["pozisyon"], key=int):
-    pos = F5["pozisyon"][k]; tot = sum(pos.values())
+for k in sorted(FM["pozisyon"], key=int):
+    pos = FM["pozisyon"][k]; tot = sum(pos.values())
     ex = roles[roles["Arketip"] == int(k)].groupby("Player")["MIN"].sum().sort_values(ascending=False).index[:3]
-    t.append({"Role": ROLE[k], "Player-seasons": F5["kume_N"][k], "Jaccard": J5[int(k) - 1], "Height (cm)": F5["ortalama_boy"][k],
+    t.append({"Role": ROLE[k], "Player-seasons": FM["kume_N"][k], "Jaccard": JM[int(k) - 1], "Height (cm)": FM["ortalama_boy"][k],
               "Guard": pct(pos.get("Guard", 0) / tot), "Forward": pct(pos.get("Forward", 0) / tot), "Centre": pct(pos.get("Center", 0) / tot),
               "Examples": "; ".join(p.title() for p in ex)})
 pd.DataFrame(t).style.hide(axis="index").format(precision=2, subset=["Jaccard"]).format(precision=1, subset=["Height (cm)"])
@@ -50,31 +54,34 @@ pd.DataFrame(t).style.hide(axis="index").format(precision=2, subset=["Jaccard"])
 
 ## Roles and registered positions
 
-Roles were strongly associated with registered position (Cramér's V = `{python} f2(F5["cramers_v"])`, 95% CI `{python} f2(F5["cramers_v_GA95"][0])`–`{python} f2(F5["cramers_v_GA95"][1])`), but the association was concentrated at the extremes (@tbl-roles). `{python} pct(share(5, 5, "Guard"))` of ball-handler player-seasons belonged to guards and `{python} pct(share(5, 4, "Center"))` of rim-protector player-seasons to centres. The three roles in between each drew substantially on two positions: wings were `{python} pct(share(5, 3, "Guard"))` guards and `{python} pct(share(5, 3, "Forward"))` forwards, stretch forwards `{python} pct(share(5, 1, "Forward"))` forwards and `{python} pct(share(5, 1, "Guard"))` guards, and interior bigs `{python} pct(share(5, 2, "Center"))` centres and `{python} pct(share(5, 2, "Forward"))` forwards.
+Roles were strongly associated with registered position (Cramér's V = `{python} f2(FM["cramers_v"])`, 95% CI `{python} f2(FM["cramers_v_GA95"][0])`–`{python} f2(FM["cramers_v_GA95"][1])`; @tbl-roles). `{python} pct(share("Ball handler", "Guard"))` of ball-handler player-seasons belonged to guards and `{python} pct(share("Rim protector", "Center"))` of rim-protector player-seasons to centres. The wing/forward role was mainly made up of forwards (`{python} pct(share("Wing/forward", "Forward"))`) with a substantial share of guards (`{python} pct(share("Wing/forward", "Guard"))`), and only the interior-big role combined two positions in similar proportions (`{python} pct(share("Interior big", "Center"))` centres, `{python} pct(share("Interior big", "Forward"))` forwards). In the `{python} KAW`-role alternative, the perimeter wing role was `{python} pct(share("Wing", "Guard", FA, ROLEA))` guards and the stretch-forward role `{python} pct(share("Stretch forward", "Forward", FA, ROLEA))` forwards.
 
 ## Roles and lineup performance
 
-RAPM was estimated for `{python} M5["rapm_oyuncu_N"]` players (penalty `{python} n(M5["lambda"])`; home advantage `{python} f2(M5["ev_sahibi_avantaji"])` points per 100 possessions). In the 2023–2024 test segments, RAPM explained `{python} pct(M5["test_R2"]["RAPM"], 2)` of the possession-weighted variance in net rating; as expected for segment-level outcomes, absolute values were small for all models. Adding role composition (penalty `{python} n(M5["rol_bilesimi"]["ceza"])`, chosen by cross-validation) increased this by `{python} f"{100 * M5['rol_bilesimi']['kazanc']:.3f}"` percentage points, more than the gain obtained with permuted role labels (@fig-perm; mean `{python} f"{100 * M5['rol_bilesimi']['null_ort']:.3f}"`, *p* `{python} fp(M5["rol_bilesimi"]["p"])`). The four-role solution gave the same result (*p* `{python} fp(M4["rol_bilesimi"]["p"])`). The effect was modest: across test segments, the predictions of the composition terms varied with a standard deviation of `{python} f2(M5["tahmin_SD_test"]["rol_bilesimi"])` points per 100 possessions, compared with `{python} f2(M5["tahmin_SD_test"]["RAPM"])` for RAPM. It came from the number of players in each role rather than from role pairings: role counts alone produced a gain of `{python} f"{100 * D5['sayilar_kazanc']:.3f}"` percentage points (permutation *p* `{python} fp(D5["sayilar_p"])`), and adding all pairwise products contributed a further `{python} f"{100 * D5['ciftler_ek_kazanc']:.3f}"` percentage points (95% CI `{python} f"{100 * D5['ciftler_ek_GA95'][0]:.3f}"` to `{python} f"{100 * D5['ciftler_ek_GA95'][1]:.3f}"`), indistinguishable from zero.
+RAPM was estimated for `{python} MM["rapm_oyuncu_N"]` players (penalty `{python} n(MM["lambda"])`; home advantage `{python} f2(MM["ev_sahibi_avantaji"])` points per 100 possessions). In the 2023–2024 test segments, RAPM explained `{python} pct(MM["test_R2"]["RAPM"], 2)` of the possession-weighted variance in net rating; as expected for segment-level outcomes, absolute values were small for all models, and `{python} pct(MM["testte_egitimde_gorulen_oyuncu_payi"])` of player appearances in test segments were by players seen in training.
 
-![Role labels add more predictive information than randomly assigned labels, but only modestly. Histogram: gain in possession-weighted out-of-time R² (2023–2024 segments) when role-composition terms are added to RAPM after role labels have been permuted among player-seasons within season; red line: gain with the observed role labels (five roles).](figures/fig3_permutation.png){#fig-perm width=80%}
+With role labels estimated in each season, adding role composition (penalty `{python} n(MM["rol_bilesimi"]["ceza"])`, chosen by cross-validation) increased the test R² by `{python} pp3(MM["rol_bilesimi"]["kazanc"])` percentage points, more than permuted role labels did (@fig-perm; *p* `{python} fp(MM["rol_bilesimi"]["p"])`), and this gain came from role counts (`{python} pp3(DM["sayilar_kazanc"])` percentage points, *p* `{python} fp(DM["sayilar_p"])`). However, the gain did not survive the leakage checks (@tbl-comp). When test-season roles were replaced by roles known from the training period, role counts no longer improved prediction (gain `{python} pp3(LK["onceki_rol"]["sayilar_kazanc"])` percentage points, *p* `{python} fp(LK["onceki_rol"]["sayilar_p"])`), and in the `{python} pct(LK["hepsi_gorulmus"]["test_segment_payi"])` of test segments in which all ten players had been seen in training, the gain was not distinguishable from that of permuted labels (*p* `{python} fp(LK["hepsi_gorulmus"]["sayilar_p"])`). The apparent role effect therefore reflected, at least in part, information about players new to the league that RAPM could not yet provide.
 
-The test was sensitive: a synergy of 0.25, 0.5 and 1 point per 100 possessions for each co-occurrence of `{python} pair` was detected in `{python} pct(P["guc"]["0.25"])`, `{python} pct(P["guc"]["0.5"])` and `{python} pct(P["guc"]["1.0"])` of simulations, respectively. Across role definitions (@tbl-comp), pairwise terms never added information beyond role counts, whereas the gain from role counts varied with the definition of the roles.
+Pairwise role products added `{python} pp3(DM["ciftler_ek_kazanc"])` percentage points beyond role counts (95% CI `{python} pp3(DM["ciftler_ek_GA95"][0])` to `{python} pp3(DM["ciftler_ek_GA95"][1])`). The test had little power to detect synergy: synergies of 0.25, 0.5 and 1 point per 100 possessions for each co-occurrence of `{python} pair` — a pairing present in `{python} pct(P["cift_test_frekansi"])` of test segments — were detected in `{python} pct(P["guc"]["0.25"])`, `{python} pct(P["guc"]["0.5"])` and `{python} pct(P["guc"]["1.0"])` of simulations, respectively. The absence of detectable synergy is therefore not evidence that synergies are absent.
+
+![With role labels estimated in each season, role composition adds more predictive information than randomly assigned labels; this gain disappears when test-season roles are restricted to information available in training (see @tbl-comp). Histogram: gain in possession-weighted out-of-time R² (2023–2024 segments) when role-composition terms are added to RAPM after role labels have been permuted among player-seasons within season; red line: gain with the observed role labels.](figures/fig3_permutation.png){#fig-perm width=80%}
 
 ```{python}
 #| label: tbl-comp
-#| tbl-cap: "Role pairings never add information beyond role counts (out-of-time R² gain over RAPM from role composition for different role solutions; same RAPM model, tuned penalty and permutation scheme; pp = percentage points)."
+#| tbl-cap: "Role composition adds information beyond RAPM only when test-season roles are estimated from test-season data (out-of-time R² gain over RAPM; same RAPM model, tuned penalty and permutation scheme; pp = percentage points)."
 rows = []
-for lab_, key in (("Final, 5 roles", "lineup_model_roles_final_K5"), ("Final, 4 roles", "lineup_model_roles_final_K4"),
-                  ("Earlier 5-role solution (full covariance, season-level bootstrap)", "lineup_model_K5"),
-                  ("Thesis 7-cluster Ward solution", "lineup_model_thesis_archetypes")):
-    m, dd = R[key]["rol_bilesimi"], R[key]["ayristirma"]
-    rows.append({"Role solution": lab_, "Terms": m["terim_N"], "Total gain (pp)": round(100 * m["kazanc"], 3),
-                 "p (total)": fp(m["p"]).replace("= ", ""), "Role counts gain (pp)": round(100 * dd["sayilar_kazanc"], 3),
-                 "p (counts)": fp(dd["sayilar_p"]).replace("= ", ""),
-                 "Pairs increment (pp, 95% CI)": f"{100 * dd['ciftler_ek_kazanc']:.3f} ({100 * dd['ciftler_ek_GA95'][0]:.3f} to {100 * dd['ciftler_ek_GA95'][1]:.3f})"})
+for lab_, key in ((f"Final, {KM} roles (main)", f"lineup_model_roles_final_K{KM}"), (f"Final, {KA} roles", f"lineup_model_roles_final_K{KA}"),
+                  ("Thesis 7-cluster Ward solution", "lineup_model_thesis_archetypes"),
+                  ("Earlier 5-role solution (full covariance)", "lineup_model_K5")):
+    m, dd, lk = R[key]["rol_bilesimi"], R[key]["ayristirma"], R[key].get("sizinti_denetimi", {})
+    rows.append({"Role solution": lab_, "Total gain (pp)": round(100 * m["kazanc"], 3), "p (total)": fp(m["p"]).replace("= ", ""),
+                 "Role counts gain (pp)": round(100 * dd["sayilar_kazanc"], 3), "p (counts)": fp(dd["sayilar_p"]).replace("= ", ""),
+                 "Pairs increment (pp, 95% CI)": f"{100 * dd['ciftler_ek_kazanc']:.3f} ({100 * dd['ciftler_ek_GA95'][0]:.3f} to {100 * dd['ciftler_ek_GA95'][1]:.3f})",
+                 "p (counts), training-period roles": fp(lk["onceki_rol"]["sayilar_p"]).replace("= ", "") if lk else "—",
+                 "p (counts), all players seen": fp(lk["hepsi_gorulmus"]["sayilar_p"]).replace("= ", "") if lk else "—"})
 pd.DataFrame(rows).style.hide(axis="index")
 ```
 
 ## Sensitivity analysis: role-combination tests
 
-When all lineup-games were included, the naive procedure indicated a non-random distribution of the thesis archetypes among "significant" combinations (χ²(6) = `{python} f2(F0T["chi2"])`, *p* `{python} fp(F0T["chi2_p_naif"])`), and this was also the case under the permutation test (*p* `{python} fp(F0T["permutasyon"]["chi2_p"])`); `{python} F0T["anlamli_formul"]` combinations were selected, more than expected by chance (`{python} F0T["permutasyon"]["null_anlamli_formul_ort"]`, *p* `{python} fp(F0T["permutasyon"]["anlamli_formul_sayisi_p"])`), and `{python} F0T["bh_fdr_sonrasi_kalan"]` survived false-discovery correction. However, `{python} F0T["anlamli_formul"] - F0T["anlamli_formul_pozitif"]` of the `{python} F0T["anlamli_formul"]` selected combinations had negative net ratings, reflecting that unweighted mean net rating was strongly negative (`{python} F0T["NRTG40_ort_agirliksiz"]` per 40 minutes) whereas the minute-weighted mean was close to zero (`{python} F0T["NRTG40_ort_dakika_agirlikli"]`). When lineup-games were required to last at least 2 minutes, the number of significant combinations (`{python} F2T["anlamli_formul"]`) matched the number expected by chance (`{python} F2T["permutasyon"]["null_anlamli_formul_ort"]`, *p* `{python} fp(F2T["permutasyon"]["anlamli_formul_sayisi_p"])`), only `{python} F2T["bh_fdr_sonrasi_kalan"]` survived correction, and the archetype distribution did not differ from that expected (χ²(6) = `{python} f2(F2T["chi2"])`, permutation *p* `{python} fp(F2T["permutasyon"]["chi2_p"])`).
+When all lineup-games were included, the naive procedure indicated a non-random distribution of the thesis archetypes among "significant" combinations (χ²(6) = `{python} f2(F0T["chi2"])`, *p* `{python} fp(F0T["chi2_p_naif"])`), and this was also the case under the permutation test (*p* `{python} fp(F0T["permutasyon"]["chi2_p"])`); `{python} F0T["anlamli_formul"]` combinations were selected, more than expected by chance (`{python} F0T["permutasyon"]["null_anlamli_formul_ort"]`, *p* `{python} fp(F0T["permutasyon"]["anlamli_formul_sayisi_p"])`), and `{python} F0T["bh_fdr_sonrasi_kalan"]` survived false-discovery correction. However, `{python} F0T["anlamli_formul"] - F0T["anlamli_formul_pozitif"]` of the `{python} F0T["anlamli_formul"]` selected combinations had negative net ratings, and unweighted mean net rating was strongly negative (`{python} F0T["NRTG40_ort_agirliksiz"]` per 40 minutes) whereas the minute-weighted mean was close to zero (`{python} F0T["NRTG40_ort_dakika_agirlikli"]`). When lineup-games were required to last at least 2 minutes, the number of significant combinations (`{python} F2T["anlamli_formul"]`) matched the number expected by chance (`{python} F2T["permutasyon"]["null_anlamli_formul_ort"]`, *p* `{python} fp(F2T["permutasyon"]["anlamli_formul_sayisi_p"])`), only `{python} F2T["bh_fdr_sonrasi_kalan"]` survived correction, and the archetype distribution did not differ from that expected (χ²(6) = `{python} f2(F2T["chi2"])`, permutation *p* `{python} fp(F2T["permutasyon"]["chi2_p"])`).
