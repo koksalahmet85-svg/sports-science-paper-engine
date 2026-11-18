@@ -118,22 +118,27 @@ def main() -> None:
     out["guvenirlik"] = {"oyuncu_N": int(len(j2)), **rel}
     # (b2) Ölçüm hatasına karşı denetim: iki aşamalı EKK — PIR40 (tüm maçlar) ~ rol + RAPM_çift, RAPM_tek araç değişken.
     #      Rol katsayıları "aynı gerçek RAPM düzeyinde" rol farklarıdır; oyuncu bootstrap %95 GA.
-    j3 = j2.join(d[["PIR40", "rol"]], how="inner")
-    def tsls(df):
+    # Sonuç ve araç farklı maç yarılarından: PIR40(çift) ~ rol + RAPM(çift), araç RAPM(tek); ve tersi
+    j3 = j2.join(d[["rol"]], how="inner")
+    def tsls(df, y, x, z):
         D = pd.get_dummies(df["rol"].astype(int)).reindex(columns=roles_sorted, fill_value=0).to_numpy(float)[:, 1:]
-        Z = np.column_stack([np.ones(len(df)), df["RAPM_t"], D])
-        rhat = Z @ np.linalg.lstsq(Z, df["RAPM_c"], rcond=None)[0]
-        X = np.column_stack([np.ones(len(df)), rhat, D])
-        return np.linalg.lstsq(X, df["PIR40"], rcond=None)[0]
-    b_iv = tsls(j3)
+        Z = np.column_stack([np.ones(len(df)), df[z], D])
+        xhat = Z @ np.linalg.lstsq(Z, df[x], rcond=None)[0]
+        X = np.column_stack([np.ones(len(df)), xhat, D])
+        b = np.linalg.lstsq(X, df[y], rcond=None)[0]
+        return np.concatenate([b, [b[2:].max() - min(0.0, b[2:].min()) if len(b) > 2 else np.nan]])
     ii3 = np.arange(len(j3))
-    bs_iv = np.array([tsls(j3.iloc[rng.choice(ii3, len(ii3))]) for _ in range(a.B)])
-    out["olcum_hatasi_denetimi"] = {
-        "yontem": "2SLS: PIR40 ~ rol + RAPM(çift maçlar), araç RAPM(tek maçlar)", "oyuncu_N": int(len(j3)),
-        "RAPM_egimi": round(float(b_iv[1]), 2), "RAPM_egimi_GA95": [round(float(x), 2) for x in np.percentile(bs_iv[:, 1], [2.5, 97.5])],
-        "rol_farki": {str(int(r)): round(float(b), 2) for r, b in zip(roles_sorted[1:], b_iv[2:])},
-        "rol_farki_GA95": {str(int(r)): [round(float(x), 2) for x in np.percentile(bs_iv[:, 2 + i], [2.5, 97.5])]
-                           for i, r in enumerate(roles_sorted[1:])}}
+    iv = {}
+    for name_, (y, x, z) in {"cift": ("PIR40_c", "RAPM_c", "RAPM_t"), "tek": ("PIR40_t", "RAPM_t", "RAPM_c")}.items():
+        b_iv = tsls(j3, y, x, z)
+        bs_iv = np.array([tsls(j3.iloc[rng.choice(ii3, len(ii3))], y, x, z) for _ in range(a.B)])
+        q = lambda i: [round(float(v), 2) for v in np.percentile(bs_iv[:, i], [2.5, 97.5])]
+        iv[name_] = {"RAPM_egimi": round(float(b_iv[1]), 2), "RAPM_egimi_GA95": q(1),
+                     "rol_farki": {str(int(r)): round(float(b), 2) for r, b in zip(roles_sorted[1:], b_iv[2:-1])},
+                     "rol_farki_GA95": {str(int(r)): q(2 + i) for i, r in enumerate(roles_sorted[1:])},
+                     "en_buyuk_rol_araligi": round(float(b_iv[-1]), 2), "en_buyuk_rol_araligi_GA95": q(len(b_iv) - 1)}
+    out["olcum_hatasi_denetimi"] = {"yontem": "2SLS: PIR40(yarı h) ~ rol + RAPM(yarı h), araç RAPM(diğer yarı); h = çift / tek",
+                                    "oyuncu_N": int(len(j3)), **iv}
 
     out["eta2_duzeltilmis"] = {"PIR40": round(est["PIR40"] / rel["PIR40"]["spearman_brown"], 3),
                                "RAPM": round(est["RAPM"] / max(rel["RAPM"]["spearman_brown"], 1e-6), 3)}
@@ -160,6 +165,20 @@ def main() -> None:
     d_s = d.drop(columns="rol").join(main_s)
     out["pir_bilesensiz_roller_kati"] = {"degiskenler": list(f_s.columns),
                                          "eta2": {m_: round(eta2(d_s, m_), 3) for m_ in ("PIR40", "VAL40", "RAPM")}}
+
+    KA = 5 if K == 4 else 4
+    ra = pd.read_csv(PROC / f"roles_final_K{KA}.csv")[["Player_ID", "Season", "Arketip"]]
+    mr = (ra.merge(ps[["Player_ID", "Season", "MIN"]], on=["Player_ID", "Season"]).groupby(["Player_ID", "Arketip"])["MIN"]
+          .sum().reset_index().sort_values("MIN").groupby("Player_ID").tail(1).set_index("Player_ID")["Arketip"])
+    da = d.drop(columns="rol").join(mr.rename("rol")).dropna(subset=["rol"])
+    pe_a, beta_a = partial_eta(da, "PIR40")
+    bs_a = [partial_eta(da.iloc[rng.choice(np.arange(len(da)), len(da))], "PIR40")[0] for _ in range(a.B)]
+    adj_a = np.concatenate([[0.0], beta_a[2:]])
+    out["K_duyarliligi"] = {"K": KA, "eta2": {m_: round(eta2(da, m_), 3) for m_ in ("PIR40", "VAL40", "RAPM")},
+                            "kismi_eta2_PIR40": round(pe_a, 3), "kismi_eta2_PIR40_GA95": [round(float(x), 3) for x in np.percentile(bs_a, [2.5, 97.5])],
+                            "rol_araligi_RAPM_sabit_PIR40": round(float(adj_a.max() - adj_a.min()), 2)}
+    adj_m = np.array(list(cond["PIR40"]["rol_farki_RAPM_sabit"].values()))
+    out["RAPM_kosullu"]["PIR40"]["rol_araligi"] = round(float(adj_m.max() - adj_m.min()), 2)
 
     res = json.loads(RESULTS.read_text())
     res["paper_b_values"] = out

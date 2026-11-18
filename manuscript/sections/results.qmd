@@ -2,11 +2,11 @@
 
 ## Number and stability of roles
 
-The `{python} COV` covariance structure had the lower information criterion and was retained. Player-level bootstrap stability was high for four and five roles and fell markedly for six or more, where at least one cluster dissolved (@fig-stab, @tbl-stab). Four roles had the highest mean stability (`{python} f3(SC[f"{COV}_K4"]["jaccard_ort"])` vs `{python} f3(SC[f"{COV}_K5"]["jaccard_ort"])` for five roles), a difference larger than the 0.02 margin of the decision rule and than the Monte Carlo error, so `{python} KW` roles were retained; the `{python} KAW`-role solution, which agreed better between periods for new players (adjusted Rand index `{python} f2(SC[f"{COV}_K{KA}"]["yeni_oyuncu_ARI"])` vs `{python} f2(SC[f"{COV}_K{KM}"]["yeni_oyuncu_ARI"])`), is reported as a finer alternative. The information criterion continued to improve slightly beyond five roles, so it did not identify a number of roles on its own. The seven-cluster Ward solution from the thesis was not stable (mean Jaccard `{python} f2(A["thesis_ward7_jaccard_mean"])`, minimum `{python} f2(A["thesis_ward7_jaccard_min"])`). Silhouette coefficients were low for all solutions, so the roles are best read as dense regions of a continuous space rather than sharply separated groups.
+The `{python} COV` covariance structure had the lower information criterion and was retained. Player-level bootstrap stability was high for four and five roles and fell markedly for six or more, where at least one cluster dissolved (@fig-stab, @tbl-stab). Four roles had the highest mean stability (`{python} f3(SC[f"{COV}_K4"]["jaccard_ort"])` vs `{python} f3(SC[f"{COV}_K5"]["jaccard_ort"])` for five roles), a difference larger than the 0.02 margin of the decision rule and than the Monte Carlo error, so `{python} KW` roles were retained; the `{python} KAW`-role solution, which agreed better between periods for new players (adjusted Rand index `{python} f2(SC[f"{COV}_K{KA}"]["yeni_oyuncu_ARI"])` vs `{python} f2(SC[f"{COV}_K{KM}"]["yeni_oyuncu_ARI"])`), is reported as a finer alternative. The information criterion was lowest at six roles and changed little between five and eight, so it did not identify a number of roles on its own. The seven-cluster Ward solution from the thesis was not stable (mean Jaccard `{python} f2(A["thesis_ward7_jaccard_mean"])`, minimum `{python} f2(A["thesis_ward7_jaccard_min"])`). Silhouette coefficients were low for all solutions, so the roles are best read as dense regions of a continuous space rather than sharply separated groups.
 
 ```{python}
 #| label: tbl-stab
-#| tbl-cap: "Stability declines beyond five roles, whereas the information criterion keeps improving slightly (Gaussian mixture models, final variable set; player-level bootstrap)."
+#| tbl-cap: "Stability declines beyond five roles, whereas the information criterion does not identify a clear number of roles (Gaussian mixture models, final variable set; player-level bootstrap)."
 rows = [{"Roles": k, "BIC": f"{SC[f'{COV}_K{k}']['BIC']:,.0f}", "Silhouette": SC[f"{COV}_K{k}"]["silhouette"],
          "Mean Jaccard": SC[f"{COV}_K{k}"]["jaccard_ort"], "Minimum Jaccard": SC[f"{COV}_K{k}"]["jaccard_min"],
          "Temporal ARI (new players)": SC[f"{COV}_K{k}"]["yeni_oyuncu_ARI"]} for k in range(4, 9)]
@@ -34,13 +34,13 @@ pd.DataFrame(rows).style.hide(axis="index").format(precision=2)
 
 ## The roles
 
-The `{python} KW` roles — `{python} ", ".join(ROLE[k].lower() for k in sorted(ROLE, key=int))` — differed mainly in shot location, rebounding and blocking, and assist relationships (@fig-prof). `{python} stable_roles` of the `{python} KW` roles were individually stable (Jaccard ≥ 0.75); the least stable was the `{python} ROLE[str(weakest)].lower()` role (`{python} f2(JM[weakest - 1])`). Posterior membership was clear for most player-seasons (`{python} pct(FM["p_max_lt_07"], 1)` had a maximum posterior probability below 0.7). In the `{python} KAW`-role alternative, the wing/forward group split into a perimeter wing role and a stretch-forward role, and the wing role was the least stable (Jaccard `{python} f2(min(FA["jaccard_kume"]))`).
+The `{python} KW` roles — `{python} ", ".join(ROLE[k].lower() for k in sorted(ROLE, key=int))` — differed mainly in shot location, rebounding and blocking, and assist relationships (@fig-prof). `{python} {4: 'All four', 5: 'All five'}[KM] if stable_roles == KM else str(stable_roles) + ' of the ' + KW` roles were individually stable (Jaccard ≥ 0.75); the least stable was the `{python} ROLE[str(weakest)].lower()` role (`{python} f2(JM[weakest - 1])`). Posterior membership was clear for most player-seasons (`{python} pct(FM["p_max_lt_07"], 1)` had a maximum posterior probability below 0.7). In the `{python} KAW`-role alternative, the wing/forward group split into a perimeter wing role and a stretch-forward role, and the wing role was the least stable (Jaccard `{python} f2(min(FA["jaccard_kume"]))`).
 
 ![The roles differ mainly in shot location, rebounding and blocking, and assist relationships. Cells show the mean within-season z-score of selected role variables (the two highest-loading variables of each role by absolute mean) in each role.](figures/fig2_role_profiles.png){#fig-prof width=100%}
 
 ```{python}
 #| label: tbl-roles
-#| tbl-cap: "Ball handlers and rim protectors are almost exclusively guards and centres, whereas the other roles combine positions (player-seasons, stability, height and position shares; example players are those with the most minutes)."
+#| tbl-cap: "Ball handlers and rim protectors are mostly guards and centres, whereas the other roles combine positions (player-seasons, stability, height and position shares; example players are those with the most minutes)."
 roles = pd.read_csv(f"../data/processed/roles_final_K{KM}.csv")
 t = []
 for k in sorted(FM["pozisyon"], key=int):
@@ -49,7 +49,7 @@ for k in sorted(FM["pozisyon"], key=int):
     t.append({"Role": ROLE[k], "Player-seasons": FM["kume_N"][k], "Jaccard": JM[int(k) - 1], "Height (cm)": FM["ortalama_boy"][k],
               "Guard": pct(pos.get("Guard", 0) / tot), "Forward": pct(pos.get("Forward", 0) / tot), "Centre": pct(pos.get("Center", 0) / tot),
               "Examples": "; ".join(p.title() for p in ex)})
-pd.DataFrame(t).style.hide(axis="index").format(precision=2, subset=["Jaccard"]).format(precision=1, subset=["Height (cm)"])
+pd.DataFrame(t).style.hide(axis="index").format(precision=3, subset=["Jaccard"]).format(precision=1, subset=["Height (cm)"])
 ```
 
 ## Roles and registered positions
@@ -68,14 +68,14 @@ Pairwise role products added `{python} pp3(DM["ciftler_ek_kazanc"])` percentage 
 
 ```{python}
 #| label: tbl-comp
-#| tbl-cap: "Role composition adds information beyond RAPM only when test-season roles are estimated from test-season data (out-of-time R² gain over RAPM; same RAPM model, tuned penalty and permutation scheme; pp = percentage points)."
+#| tbl-cap: "Evidence that role composition adds information beyond RAPM depends on how test-season roles are assigned (out-of-time R² gain over RAPM; same RAPM model, tuned penalty and permutation scheme; pp = percentage points; p values are not adjusted for multiplicity)."
 rows = []
 for lab_, key in ((f"Final, {KM} roles (main)", f"lineup_model_roles_final_K{KM}"), (f"Final, {KA} roles", f"lineup_model_roles_final_K{KA}"),
                   ("Thesis 7-cluster Ward solution", "lineup_model_thesis_archetypes"),
                   ("Earlier 5-role solution (full covariance)", "lineup_model_K5")):
     m, dd, lk = R[key]["rol_bilesimi"], R[key]["ayristirma"], R[key].get("sizinti_denetimi", {})
-    rows.append({"Role solution": lab_, "Total gain (pp)": round(100 * m["kazanc"], 3), "p (total)": fp(m["p"]).replace("= ", ""),
-                 "Role counts gain (pp)": round(100 * dd["sayilar_kazanc"], 3), "p (counts)": fp(dd["sayilar_p"]).replace("= ", ""),
+    rows.append({"Role solution": lab_, "Total gain (pp)": f"{100 * m['kazanc']:.3f}", "p (total)": fp(m["p"]).replace("= ", ""),
+                 "Role counts gain (pp)": f"{100 * dd['sayilar_kazanc']:.3f}", "p (counts)": fp(dd["sayilar_p"]).replace("= ", ""),
                  "Pairs increment (pp, 95% CI)": f"{100 * dd['ciftler_ek_kazanc']:.3f} ({100 * dd['ciftler_ek_GA95'][0]:.3f} to {100 * dd['ciftler_ek_GA95'][1]:.3f})",
                  "p (counts), training-period roles": fp(lk["onceki_rol"]["sayilar_p"]).replace("= ", "") if lk else "—",
                  "p (counts), all players seen": fp(lk["hepsi_gorulmus"]["sayilar_p"]).replace("= ", "") if lk else "—"})

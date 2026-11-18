@@ -75,7 +75,7 @@ f"**Conclusions:** Four to five functional roles can be recovered reproducibly f
 
 # Prior dissemination {.unnumbered}
 
-The data source and part of the analytic approach were first used in the author's doctoral thesis (Ege University, Türkiye), which is available through the national thesis repository; the thesis's role-clustering and lineup-optimisation results are re-examined, and in part corrected, here. The full thesis reference will be added before submission. A companion manuscript on the same data addresses a different question (the predictive validity of box-score value indices and lineup optimisation).
+The data source and part of the analytic approach were first used in the author's doctoral thesis (Ege University, Türkiye), which is available through the national thesis repository; the thesis's role-clustering and lineup-optimisation results are re-examined, and in part corrected, here: its seven player archetypes were not reproducible under resampling, and its test of archetype combinations was sensitive to very short lineups. The full thesis reference will be added before submission. A companion manuscript on the same data addresses a different question (the predictive validity of box-score value indices and lineup optimisation).
 
 # Data and code availability {.unnumbered}
 

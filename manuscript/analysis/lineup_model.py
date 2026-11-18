@@ -32,7 +32,7 @@ RESULTS = Path(__file__).with_name("results.json")
 SEED = 20261111
 LAMBDAS = [500, 1000, 2000, 4000, 8000]
 COMP_ALPHAS = [100, 1000, 5000, 20000, 100000]
-POWER_DELTAS = [0.25, 0.5, 1.0]
+POWER_DELTAS = [0.0, 0.5, 1.0, 2.0]   # 0 = birinci tür hata kontrolü
 MIN_POSS = 300  # bunun altındaki oyuncular "yedek" sütununda toplanır
 
 
@@ -175,6 +175,7 @@ def main() -> None:
         m = Ridge(alpha=comp_alpha).fit(ftr, y_tr - p_tr, sample_weight=tr["poss"].values)
         mk = np.ones(len(y_te_), bool) if mask is None else mask
         q = p_te + m.predict(fte)
+        comp_gain.last = (q, mk)
         return wr2(y_te_[mk], q[mk], wte[mk]) - wr2(y_te_[mk], p_te[mk], wte[mk]), m
 
     def permuted():
@@ -199,7 +200,7 @@ def main() -> None:
     for _ in range(500):
         ii = np.concatenate([g_idx0[g] for g in rng.choice(games0, len(games0))])
         inc.append(wr2(yte[ii], pf[ii], wte[ii]) - wr2(yte[ii], pc[ii], wte[ii]))
-    decomp = {"sayilar_kazanc": round(float(gain_counts), 5),
+    decomp = {"sayilar_kazanc": round(float(gain_counts), 5), "sayilar_kazanc_GA95": None,
               "sayilar_p": round(float((1 + (null_counts >= gain_counts).sum()) / (1 + len(null_counts))), 4),
               "ciftler_ek_kazanc": round(float(gain - gain_counts), 5),
               "ciftler_ek_GA95": [round(float(x), 5) for x in np.percentile(inc, [2.5, 97.5])]}
@@ -236,10 +237,29 @@ def main() -> None:
     role_prior = prior_map(role)
     all_seen = np.array([all(p_ in seen for p_ in la) and all(p_ in seen for p_ in lb) for la, lb in zip(te["LA"], te["LB"])])
     NB = min(a.B, 500)
+    def split_map(rmap):
+        """Eğitimde görülen oyunculara test sezonundaki rolleri, yeni oyunculara rol yok (0)."""
+        return {kk: v for kk, v in rmap.items() if kk[1] <= 2022 or kk[0] in seen}
+
+    def gain_ci(rmap_, cols_=None, mask=None):
+        comp_gain(rmap_, cols_=cols_, mask=mask)
+        q, mk = comp_gain.last
+        idx_all = np.where(mk)[0]
+        gi = {}
+        for i_ in idx_all:
+            gi.setdefault(te["game"].values[i_], []).append(i_)
+        gl = list(gi)
+        bs_ = []
+        for _ in range(500):
+            ii = np.concatenate([gi[gl[j]] for j in rng.choice(len(gl), len(gl))])
+            bs_.append(wr2(yte[ii], q[ii], wte[ii]) - wr2(yte[ii], p_rapm_te[ii], wte[ii]))
+        return [round(float(x), 5) for x in np.percentile(bs_, [2.5, 97.5])]
+
     leak = {}
     for name_, rmap_, mask_, mk_perm in (
             ("onceki_rol", role_prior, None, lambda: prior_map(permuted())),
-            ("hepsi_gorulmus", role, all_seen, permuted)):
+            ("hepsi_gorulmus", role, all_seen, permuted),
+            ("yeni_oyuncu_rolsuz", split_map(role), None, lambda: split_map(permuted()))):
         g_c = comp_gain(rmap_, cols_=counts, mask=mask_)[0]
         g_t = comp_gain(rmap_, mask=mask_)[0]
         nc, nt = [], []
@@ -251,14 +271,25 @@ def main() -> None:
                        "sayilar_p": round(float((1 + (np.array(nc) >= g_c).sum()) / (1 + NB)), 4),
                        "toplam_kazanc": round(float(g_t), 5),
                        "toplam_p": round(float((1 + (np.array(nt) >= g_t).sum()) / (1 + NB)), 4),
-                       "test_segment_payi": round(float(1.0 if mask_ is None else mask_.mean()), 3), "B": NB}
+                       "test_segment_payi": round(float(1.0 if mask_ is None else mask_.mean()), 3), "B": NB,
+                       "sayilar_kazanc_GA95": gain_ci(rmap_, cols_=counts, mask=mask_)}
         print("sızıntı", name_, leak[name_], flush=True)
+
+    decomp["sayilar_kazanc_GA95"] = gain_ci(role, cols_=counts)
+    decomp["toplam_kazanc_GA95"] = gain_ci(role)
 
     # 3b. Güç simülasyonu: en sık görülen iki farklı rolün birlikteliğine δ puan/100 hücum sinerji eklenir
     power = {}
     if a.power:
         pairs_all = list(combinations_with_replacement(range(1, k + 1), 2))
-        occ = {pp: np.abs(role_features(tr, role, k)[:, k + i]).sum() for i, pp in enumerate(pairs_all) if pp[0] != pp[1]}
+        def presence(st_, pp):
+            c = 0
+            for col in ("LA", "LB"):
+                for lu, s_ in zip(st_[col], st_["Season"]):
+                    r_ = [role.get((p_, s_), 0) for p_ in lu]
+                    c += (pp[0] in r_) and (pp[1] in r_)
+            return c / (2 * len(st_))
+        occ = {pp: presence(tr, pp) for pp in pairs_all if pp[0] != pp[1]}
         target = max(occ, key=occ.get)
         j_ = k + pairs_all.index(target)
         inj_tr, inj_te = role_features(tr, role, k)[:, j_], role_features(te, role, k)[:, j_]
@@ -286,7 +317,8 @@ def main() -> None:
             print("güç", target, delta, power[str(delta)], flush=True)
         power = {"cift": list(target), "guc": power, "sim": a.power, "B": a.power_B,
                  "olcut": "çift artışının maç-bootstrap GA alt sınırı > 0; eğitim maçları her tekrarda yeniden örneklenir",
-                 "cift_test_frekansi": round(float(np.mean(inj_te != 0)), 3)}
+                 "cift_dizilim_payi_egitim": round(float(occ[target]), 3), "cift_dizilim_payi_test": round(float(presence(te, target)), 3),
+                 "cift_farkli_segment_payi_test": round(float(np.mean(inj_te != 0)), 3)}
 
     pairs = list(combinations_with_replacement(range(1, k + 1), 2))
     names = [f"n{r}" for r in range(1, k + 1)] + [f"n{x}×n{y}" for x, y in pairs]
