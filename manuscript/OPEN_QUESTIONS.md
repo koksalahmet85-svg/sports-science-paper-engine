@@ -81,3 +81,9 @@ Tasarım: her sezon ikiye bölünür; oyuncu değerleri yalnızca kesim öncesi 
 44. 🔄 **#35 reversed: the role-composition gain is leakage.** When test-season roles are taken from the training period, the gain disappears (K4 counts p ≈ 0.36; K5 p ≈ 0.18). The earlier p ≈ 0.04 result came from test-season role labels standing in for new players' quality. The earlier power analysis (≥ 0.8) was invalid; the corrected power is ≤ 0.16 (K4) / ≤ 0.32 (K5). The "no synergy" claim was withdrawn; the result is "inconclusive".
 45. ✅ **Paper B:** the ILP–coach comparison is now direct (within the same team-season, overlapping segments excluded). Differences range from −3.6 to +1.5 and all CIs include 0. Constraint roles come from the previous season (34% of candidates are new to the league and use the current season's role).
 46. ✅ A "Prior dissemination" statement was added to both papers (thesis + companion paper). The thesis bib entry is still waiting on #37.
+
+## Revision round 3 (2026-11-18): remaining author decisions
+47. ❓ **Smallest worthwhile effect (SWC):** Both reviewers want an equivalence bound defined in advance (e.g. ±2 points per 100 possessions in lineup net rating). Is there a value based on coaching experience?
+48. ❓ **A hand-written `@phdthesis` entry from the YÖK record:** Is an exception to CLAUDE.md rule 1 (cite only via sspe-doi) acceptable? Proposal: allow a manual bib entry only for sources without a DOI and with an official record, and log the record number in `literature/answers/`.
+49. 🔬 **Tez kümeleri:** Tezin 7 kümesi, yeni oyuncular rolsüz bırakıldığında küçük ama anlamlı kazanç veriyor (p ≈ 0,002). Kutu skoru üretimine dayalı kümeler oyuncu kalitesini taşıyor olabilir → ayrı bir kısa not/analiz için aday.
+50. ⏭️ Minor items still open: English STROBE supplement and flow diagram, uncertainty in the Paper B Fig. 1, a common-sample R² for out-of-time prediction, game-state (score/quarter) adjustment.

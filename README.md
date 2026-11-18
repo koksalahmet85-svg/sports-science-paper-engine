@@ -54,7 +54,7 @@ Claude Code içinde: `literature-scout`, `methodologist`, `data-analyst`, `q1-re
 
 | Paper | Source | Draft | Reproduce |
 |---|---|---|---|
-| A — Functional roles and lineup synergy | `manuscript/` | `drafts/makale_A_taslak_v3.docx` | `make data paper-a` |
-| B — Box-score role bias, RAPM, ILP vs coach | `manuscript_b/` | `drafts/makale_B_taslak_v1.docx` | `make paper-b` |
+| A — Functional roles and lineup synergy | `manuscript/` | `drafts/makale_A_taslak_v4.docx` | `make data paper-a` |
+| B — Box-score role bias, RAPM, ILP vs coach | `manuscript_b/` | `drafts/makale_B_taslak_v2.docx` | `make paper-b` |
 
-Both papers: `make render-all`. Reviewer reports are in `*/reviews/`, open author decisions in `manuscript/OPEN_QUESTIONS.md` (#34–42), and the Turkish summary for the advisor is in `drafts/danisman_ozeti.docx`.
+Both papers: `make render-all`. Reviewer reports are in `*/reviews/`, open author decisions in `manuscript/OPEN_QUESTIONS.md` (#34–46), and the Turkish summary for the advisor is in `drafts/danisman_ozeti.docx`.

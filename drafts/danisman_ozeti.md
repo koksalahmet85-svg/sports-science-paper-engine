@@ -10,7 +10,7 @@ lang: tr
 Tezin üç ana iddiası açık EuroLeague verisiyle (2016–17 → 2024–25, 9 sezon, 2.646 maç) yeniden sınandı. İki hakem turundan sonra ulaşılan sonuçlar:
 
 1. **Arketipler.** Tezdeki 7 küme kod düzeyinde birebir yeniden üretildi. Ancak oyuncu düzeyinde yeniden örneklemede kararsız çıktı (ortalama Jaccard ≈ 0,44). Önceden belirlenen kararlılık kuralı **4 işlevsel rol** seçti (Jaccard ≈ 0,89): top taşıyıcı, kanat/forvet, iç uzun ve pota koruyucu. **5 rol** neredeyse aynı kararlılıkta (≈ 0,85); bu çözüm kanat ile açılan forveti ayırıyor.
-2. **"Belirli arketip kombinasyonları daha başarılıdır" iddiası desteklenmedi.** Her sezonun rolleri o sezonun verisiyle belirlendiğinde, rol bileşimi RAPM'in ötesinde anlamlı görünüyordu. Ancak test sezonlarının rolleri yalnızca önceden bilinen bilgiyle verildiğinde etki kayboldu (p ≈ 0,36). Sinerjiyi saptama gücü düşük (en fazla %16); bu nedenle "sinerji yoktur" da denemez.
+2. **"Belirli arketip kombinasyonları daha başarılıdır" iddiası desteklenmedi.** Her sezonun rolleri o sezonun verisiyle belirlendiğinde, rol bileşimi RAPM'in ötesinde anlamlı görünüyordu. Ancak test sezonlarının rolleri yalnızca önceden bilinen bilgiyle verildiğinde etki kayboldu (p ≈ 0,36). Sinerjiyi saptama gücü sınırlı: 100 hücumda 1 sayılık sinerjide %53, 2 sayılıkta %95. Bu nedenle yalnızca büyük (yaklaşık 2 sayı ve üzeri) sinerjiler dışlanabiliyor.
 3. **VAL/PIR ile ILP beşli seçimi.** PIR, aynı saha etkisine (RAPM) sahip oyuncular arasında pota koruyucu ve iç uzunlara top taşıyıcılardan yaklaşık 4–5 puan/40 dk fazla veriyor (kısmi η² ≈ 0,27). ILP ile seçilen beşliler, antrenörün en çok oynattığı beşliden hiçbir varyantta daha iyi değil: doğrudan farklar −3,6 ile +1,5 arasında ve tümü anlamsız.
 
 Bu çalışma tezi çürütmüyor. Tezin sonuçlarını yöntemsel olarak düzelten ve sınırlarını açıkça çizen iki makale üretiyor.
@@ -21,7 +21,8 @@ Bu çalışma tezi çürütmüyor. Tezin sonuçlarını yöntemsel olarak düzel
 
 - **Yöntem:** Gauss karışım modeli (tied kovaryans) ve oyuncu düzeyinde bootstrap (B = 500, tek koşu). Değişkenler: ileri istatistikler, şut profili ve asist ağı.
 - **Pozisyonla ilişki:** Top taşıyıcıların %92'si guard, pota koruyucuların %90'ı pivot. Kanat/forvet rolü ağırlıkla forvetlerden oluşuyor. Pozisyon örtüşmesi ön alanda (iç uzun: %59 pivot, %39 forvet).
-- **Sızıntı denetimi:** Hakemin önerdiği bu denetim, önceki "anlamlı" bulgunun yeni oyuncuların kalitesine vekâlet eden rol etiketlerinden kaynaklandığını gösterdi.
+- **Sızıntı denetimi:** Üç ayrı denetimde (eğitim dönemi rolleri, yeni oyuncular rolsüz, yalnızca bilinen oyuncular) pozitif kazanç kalmadı. Önceki "anlamlı" bulgu sağlam değil.
+- **Tez kümeleri istisnası:** Tezin 7 kümesinde, eğitimde görülen oyuncular arasında küçük bir kazanç sürüyor. Bunun nedeni kutu skoru üretimine dayalı kümelerin oyuncu kalitesini kısmen taşıması olabilir; bu ayrıca incelenmeye değer.
 - **Tezdeki χ² formül testi:** Kısa dizilimlerin seçilme yanlılığına duyarlı; asgari süre koyulunca "anlamlı" kombinasyon sayısı şans düzeyine iniyor.
 
 # Makale B: oyuncu değeri ve ILP
@@ -41,7 +42,7 @@ Bu çalışma tezi çürütmüyor. Tezin sonuçlarını yöntemsel olarak düzel
 
 - **Sayılar:** Metindeki tüm sayılar analiz çıktısından otomatik okunuyor. Kod sürümü, tohum ve paket sürümleri `results.json` içinde kayıtlı.
 - **Atıflar:** Tümü DOI meta verisiyle eklendi ve otomatik denetlendi. Doğrulanamayan iki literatür iddiası (Chen, Wei) metinden çıkarıldı.
-- **Hakem süreci:** Q1 düzeyinde üç hakem turu yapıldı. Her turdaki kritik eleştiriler yeniden analizle giderildi. Bulgular değiştiğinde (5 → 4 rol, anlamlı → anlamsız rol etkisi) dürüstçe raporlandı.
+- **Hakem süreci:** Q1 düzeyinde üç hakem turu yapıldı; son kararlar her iki makale için "majör revizyon, minöre yakın". Kalan maddelerin çoğu yazar bilgisi gerektiriyor (tez künyesi, beyanlar, en küçük anlamlı etki tanımı). Her turdaki kritik eleştiriler yeniden analizle giderildi. Bulgular değiştiğinde (5 → 4 rol, anlamlı → anlamsız rol etkisi) dürüstçe raporlandı.
 - **Yeniden üretim:** Veri ve kod açık; tek komutla yeniden üretilebilir: `make data paper-a paper-b render-all`.
 
 # Danışmanla karar verilecek noktalar
