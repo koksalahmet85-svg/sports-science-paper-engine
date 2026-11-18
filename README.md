@@ -49,3 +49,12 @@ Claude Code içinde: `literature-scout`, `methodologist`, `data-analyst`, `q1-re
 - `literature/` — PDF'ler, kanıt tablosu, gap raporları, paper-qa yanıtları
 - `manuscript/` — Quarto projesi, `sections/*.qmd`, `analysis/run.py`, `reviews/`, `checklists/`
 - `data/raw` (salt okunur, git dışı), `data/processed`
+
+## Current papers (EuroLeague 2016–2025, from the doctoral thesis)
+
+| Paper | Source | Draft | Reproduce |
+|---|---|---|---|
+| A — Functional roles and lineup synergy | `manuscript/` | `drafts/makale_A_taslak_v3.docx` | `make data paper-a` |
+| B — Box-score role bias, RAPM, ILP vs coach | `manuscript_b/` | `drafts/makale_B_taslak_v1.docx` | `make paper-b` |
+
+Both papers: `make render-all`. Reviewer reports are in `*/reviews/`, open author decisions in `manuscript/OPEN_QUESTIONS.md` (#34–42), and the Turkish summary for the advisor is in `drafts/danisman_ozeti.docx`.
