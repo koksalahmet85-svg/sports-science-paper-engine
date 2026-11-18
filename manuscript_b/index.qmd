@@ -11,13 +11,20 @@ keywords: [basketball, performance index rating, plus-minus, lineup optimisation
 import json, pathlib
 import pandas as pd
 R = json.loads(pathlib.Path("../manuscript/analysis/results.json").read_text())
-ROLE = json.loads(pathlib.Path("../manuscript/analysis/role_names.json").read_text())
-A, V, L, I = R["paper_a"], R["paper_b_values"], R["lineup_model_roles_final_K5"], R["ilp_validation"]
+KM = R["roles_final"]["K"]
+WORD = {4: "four", 5: "five"}
+ROLE = json.loads(pathlib.Path("../manuscript/analysis/" + ("role_names.json" if KM == 5 else f"role_names_K{KM}.json")).read_text())
+rid = {v: k for k, v in ROLE.items()}
+A, V, L, I = R["paper_a"], R["paper_b_values"], R[f"lineup_model_roles_final_K{KM}"], R["ilp_validation"]
+DC = I["dogrudan_eslestirilmis_fark"]
+CV = V["RAPM_kosullu"]["PIR40"]; IV = V["olcum_hatasi_denetimi"]
+REF = ROLE["1"].lower()
 T, S, C = L["test_R2"], I["amac_fonksiyonu_egimi"], I["ilp_beslisi"]
 CD, OV = I["ilp_antrenore_gore_fark"], I["antrenor_beslisiyle_ortak_oyuncu"]
 n = lambda x: f"{x:,}"
 f2 = lambda x: f"{x:.2f}"
 pp = lambda x: f"{100 * x:.2f}"
+pc0 = lambda x: f"{100 * x:.0f}" if x >= 0.05 else f"{100 * x:.1f}"
 ci = lambda v: f"{v[0]:.2f} to {v[1]:.2f}"
 cipp = lambda v: f"{100 * v[0]:.2f} to {100 * v[1]:.2f}"
 def slope(k): return f"{S[k]['egim']:.2f} (95% CI {ci(S[k]['GA95'])})"
@@ -28,10 +35,10 @@ def contrast(k): return f"{C[k]['fark']:.2f} (95% CI {ci(C[k]['GA95'])})"
 
 ```{python}
 #| output: asis
-print(f"**Purpose:** Box-score indices such as the EuroLeague Performance Index Rating (PIR) are widely used to value players, and decision-support frameworks optimise lineups on such values. We tested whether these indices are biased by player role, whether they predict future lineup performance, and whether lineups optimised on them outperform coaches' own choices. "
-f"**Methods:** Nine EuroLeague seasons ({n(A['games'])} games) were analysed. PIR and a related composite index (VAL) per 40 minutes were compared with regularised adjusted plus-minus (RAPM). Role bias was quantified as the variance explained by five data-driven player roles. Predictive validity was assessed out of time (training 2016–2022, test 2023–2024) and within seasons (values from the first half, outcomes in the second half). Integer linear programming selected each team's highest-value five, which was compared with the five players given most minutes in the first half. "
-f"**Results:** Role explained {pp(V['eta2']['PIR40'])}% of between-player variance in PIR but {pp(V['eta2']['RAPM'])}% in RAPM, and among players with the same RAPM, role still explained {pp(V['RAPM_kosullu']['PIR40']['kismi_eta2'])}% of the variance in PIR; the pattern persisted after correction for reliability and with roles defined without PIR components. RAPM predicted out-of-time lineup net rating better than PIR and VAL. Within seasons, only RAPM-based lineup value had a confidence interval excluding zero, although differences between measures were not statistically significant. Optimised fives shared about three of five players with the coach's most-used five and did not differ from it in second-half net rating (all paired 95% confidence intervals included zero, spanning about ±4–5 points per 100 possessions). "
-f"**Conclusions:** PIR-type indices rate interior roles higher than players with the same on-court impact in other roles and should not be used to compare players across roles; plus-minus-based values are preferable for this purpose. Lineup optimisation on any of these values showed no advantage over coaches' rotations, which should be the benchmark for lineup decision tools.")
+print(f"**Purpose:** Box-score indices such as the EuroLeague Performance Index Rating (PIR) are widely used to value players, and decision-support frameworks optimise lineups on such values. We tested whether these indices depend on player role over and above on-court impact, whether they predict future lineup performance, and whether lineups optimised on them outperform coaches' own choices. "
+f"**Methods:** Nine EuroLeague seasons ({n(A['games'])} games) were analysed. PIR and a related composite index (VAL) per 40 minutes were compared with regularised adjusted plus-minus (RAPM). Role dependence was quantified as the variance explained by {WORD[KM]} data-driven player roles, unconditionally and among players with the same RAPM. Predictive validity was assessed out of time (training 2016–2022, test 2023–2024) and within seasons (values from the first half, outcomes in the second half). Integer linear programming selected each team's highest-value five, which was compared directly with the five players given most first-half minutes. "
+f"**Results:** Role explained {pc0(V['eta2']['PIR40'])}% of between-player variance in PIR but {pc0(V['eta2']['RAPM'])}% in RAPM. Among players with the same RAPM, role still explained {pc0(CV['kismi_eta2'])}% of the variance in PIR, and rim protectors and interior bigs were rated about {CV['rol_farki_RAPM_sabit'][rid['Rim protector']]:.1f} and {CV['rol_farki_RAPM_sabit'][rid['Interior big']]:.1f} PIR points per 40 minutes higher than {REF}s; the pattern persisted after correcting for measurement error in RAPM and with roles defined without PIR components. Out of time, RAPM explained {pp(T['RAPM'])}% of the variance in lineup net rating, compared with {pp(T['PIR40_toplami'])}% for PIR (difference 95% CI {cipp(T['fark_GA95']['RAPM-PIR40'])} percentage points). Within seasons, RAPM-based lineup value and first-half minutes, but no box-score measure, had confidence intervals excluding zero. In direct within-team comparisons, optimised fives differed from the coach's most-used five by {min(v['fark'] for v in DC.values()):.1f} to {max(v['fark'] for v in DC.values()):+.1f} points per 100 possessions, with all 95% confidence intervals including zero. "
+f"**Conclusions:** PIR-type indices rate interior roles higher than players with the same on-court impact in other roles and should not be used to compare players across roles. Lineup optimisation on these or on plus-minus values showed no evidence of an advantage over coaches' rotations, although moderate differences could not be excluded; coaches' choices should be the benchmark for lineup decision tools.")
 ```
 
 {{< include sections/introduction.qmd >}}
@@ -42,9 +49,13 @@ f"**Conclusions:** PIR-type indices rate interior roles higher than players with
 
 {{< include sections/discussion.qmd >}}
 
+# Prior dissemination {.unnumbered}
+
+The data source and part of the analytic approach were first used in the author's doctoral thesis (Ege University, Türkiye), which is available through the national thesis repository; the thesis's role-clustering and lineup-optimisation results are re-examined, and in part corrected, here. The full thesis reference will be added before submission. A companion manuscript on the same data addresses a different question (the derivation and stability of functional player roles).
+
 # Data and code availability {.unnumbered}
 
-All data were obtained from the public EuroLeague application programming interface. Code reproducing every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier on acceptance.
+All data were obtained from the public EuroLeague application programming interface. Code reproducing every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier before submission; the exact code version, random seed and package versions used are recorded in the results file (`provenance`).
 
 # Use of artificial intelligence {.unnumbered}
 

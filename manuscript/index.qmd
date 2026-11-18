@@ -73,9 +73,13 @@ f"**Conclusions:** Four to five functional roles can be recovered reproducibly f
 
 {{< include sections/discussion.qmd >}}
 
+# Prior dissemination {.unnumbered}
+
+The data source and part of the analytic approach were first used in the author's doctoral thesis (Ege University, Türkiye), which is available through the national thesis repository; the thesis's role-clustering and lineup-optimisation results are re-examined, and in part corrected, here. The full thesis reference will be added before submission. A companion manuscript on the same data addresses a different question (the predictive validity of box-score value indices and lineup optimisation).
+
 # Data and code availability {.unnumbered}
 
-All data were obtained from the publicly accessible EuroLeague application programming interface. The code that downloads the data and reproduces every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier on acceptance.
+All data were obtained from the publicly accessible EuroLeague application programming interface. The code that downloads the data and reproduces every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier before submission; the exact code version, random seed and package versions used are recorded in the results file (`provenance`).
 
 # Use of artificial intelligence {.unnumbered}
 

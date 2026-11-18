@@ -60,7 +60,7 @@ def main() -> None:
     fig.tight_layout()
     fig.savefig(FIG / "fig2_slopes.png", dpi=300)
 
-    c = R["ilp_validation"]["ilp_antrenore_gore_fark"]
+    c = R["ilp_validation"]["dogrudan_eslestirilmis_fark"]
     keys = [f"{m}_{r}" for m in SEL if m != "DAKIKA" for r in RULE if f"{m}_{r}" in c]
     labels = [f"{SEL[k.rsplit('_', 1)[0]]}, {RULE[k.rsplit('_', 1)[1]]}" for k in keys]
     fig, ax = plt.subplots(figsize=(6.2, 3.8))
