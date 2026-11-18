@@ -75,3 +75,9 @@ Tasarım: her sezon ikiye bölünür; oyuncu değerleri yalnızca kesim öncesi 
 40. ❓ **Synergy data:** the BSL coach's Synergy Excel file is not in either paper or in the repo. It can only be used as external validation (a role ↔ play-type match) once written permission comes from Synergy.
 41. ❓ **Data/code archive:** take a Zenodo DOI for the GitHub release and add it to the "Data availability" sentence.
 42. ⚠️ **#31 still open:** `sspe-ask` (paper-qa) could not be run; the comparisons were checked manually against full text (`literature/answers/20261118-...md`). Wei 2025 was checked from the abstract only; get the full text before submission.
+
+## Revision round 2 (2026-11-18)
+43. 🔄 **#34 updated: the main solution is 4 roles.** With a single bootstrap run at B = 500, the decision rule picks K = 4 (Jaccard 0.889 vs 0.848; the difference exceeds the 0.02 threshold and the Monte Carlo error). K = 5 is reported as a finer alternative. The earlier B = 100 run had picked 5 roles; this is stated openly in the Limitations.
+44. 🔄 **#35 reversed: the role-composition gain is leakage.** When test-season roles are taken from the training period, the gain disappears (K4 counts p ≈ 0.36; K5 p ≈ 0.18). The earlier p ≈ 0.04 result came from test-season role labels standing in for new players' quality. The earlier power analysis (≥ 0.8) was invalid; the corrected power is ≤ 0.16 (K4) / ≤ 0.32 (K5). The "no synergy" claim was withdrawn; the result is "inconclusive".
+45. ✅ **Paper B:** the ILP–coach comparison is now direct (within the same team-season, overlapping segments excluded). Differences range from −3.6 to +1.5 and all CIs include 0. Constraint roles come from the previous season (34% of candidates are new to the league and use the current season's role).
+46. ✅ A "Prior dissemination" statement was added to both papers (thesis + companion paper). The thesis bib entry is still waiting on #37.
