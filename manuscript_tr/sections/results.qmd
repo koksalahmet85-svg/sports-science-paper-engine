@@ -1,0 +1,93 @@
+# Bulgular
+
+## Rol sayısı ve kararlılık
+
+`{python} COV_TR` kovaryans yapısının bilgi ölçütü daha düşük bulunmuş ve bu yapı seçilmiştir. Oyuncu düzeyi bootstrap kararlılığı dört ve beş rol için yüksek, altı ve daha fazla rol için ise belirgin biçimde düşüktür; bu çözümlerde en az bir küme dağılmıştır (@fig-stab, @tbl-stab). En yüksek ortalama kararlılık dört roldedir (beş rol için `{python} f3(SC[f"{COV}_K5"]["jaccard_ort"])` karşısında `{python} f3(SC[f"{COV}_K4"]["jaccard_ort"])`); bu fark karar kuralındaki 0,02 eşiğinden ve Monte Carlo hatasından büyük olduğu için `{python} KW` rol seçilmiştir. Yeni oyuncular için dönemler arası uyumu daha iyi olan `{python} KAW` rollü çözüm (düzeltilmiş Rand endeksi `{python} f2(SC[f"{COV}_K{KM}"]["yeni_oyuncu_ARI"])` karşısında `{python} f2(SC[f"{COV}_K{KA}"]["yeni_oyuncu_ARI"])`) daha ince bir alternatif olarak raporlanmıştır. Bilgi ölçütü altı rolde en düşüktür ve beş ile sekiz rol arasında çok az değişmektedir; dolayısıyla tek başına bir rol sayısı belirlememektedir. Tezdeki yedi kümeli Ward çözümü kararlı değildir (ortalama Jaccard `{python} f2(A["thesis_ward7_jaccard_mean"])`, en düşük `{python} f2(A["thesis_ward7_jaccard_min"])`). Siluet katsayıları tüm çözümlerde düşüktür; bu nedenle roller keskin biçimde ayrılmış gruplar olarak değil, sürekli bir uzaydaki yoğun bölgeler olarak okunmalıdır.
+
+```{python}
+#| label: tbl-stab
+#| tbl-cap: "Kararlılık beş rolün ötesinde düşmektedir; bilgi ölçütü ise belirgin bir rol sayısı göstermemektedir (Gauss karışım modelleri, nihai değişken seti; oyuncu düzeyi bootstrap)."
+rows = [{"Rol sayısı": k, "BIC": n(SC[f'{COV}_K{k}']['BIC']), "Siluet": f2(SC[f"{COV}_K{k}"]["silhouette"]),
+         "Ortalama Jaccard": f2(SC[f"{COV}_K{k}"]["jaccard_ort"]), "En düşük Jaccard": f2(SC[f"{COV}_K{k}"]["jaccard_min"]),
+         "Zamansal ARI (yeni oyuncular)": f2(SC[f"{COV}_K{k}"]["yeni_oyuncu_ARI"])} for k in range(4, 9)]
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Beşten ince rol bölümlemeleri oyuncu düzeyinde yeniden örneklemede kararlı değildir. Ortak ve köşegen kovaryanslı Gauss karışım modelleri (nihai değişken seti) ile daha önce kullanılan yedi kümeli Ward çözümü için kümelerin ortalama bootstrap Jaccard benzerliği. Kesikli çizgi: 0,75 (kararlı); noktalı çizgi: 0,5 (dağılmış).](figures/fig1_stability.png){#fig-stab width=80%}
+
+Boyun eklenmesi bölümlemeyi büyük ölçüde değiştirmemiştir (düzeltilmiş Rand endeksi `{python} f2(RF["duyarlilik"][f"paylar+sut+ag+boy_K{KM}"]["nihai_ile_ARI"])`). Asist ağı bilgisi içermeyen değişken setleri daha az kararlı çözümler vermiş ve nihai bölümlemeyle yalnızca kısmen örtüşmüştür (@tbl-robust).
+
+```{python}
+#| label: tbl-robust
+#| tbl-cap: "Asist ağı bilgisi içermeyen değişken setleri daha az kararlı bölümlemeler vermektedir (alternatif değişken setleriyle kararlılık ve nihai bölümlemeyle uyum)."
+lab = {"kutu_skoru": "Kutu skoru oranları", "kutu_skoru+sut": "Kutu skoru oranları + şut profili", "paylar+sut": "Hücum payları + şut profili",
+       "paylar+sut+ag (nihai)": "Hücum payları + şut profili + asist ağı (nihai)", "paylar+sut+ag+boy": "Nihai + boy"}
+rows = []
+for s_ in lab:
+    row = {"Değişken seti": lab[s_], "Değişken": RF["duyarlilik"][f"{s_}_K{KM}"]["degisken_N"]}
+    for k in (KM, KA):
+        d_ = RF["duyarlilik"][f"{s_}_K{k}"]
+        row[f"Ort. Jaccard ({k})"] = f2(d_["jaccard_ort"]); row[f"En düşük Jaccard ({k})"] = f2(d_["jaccard_min"]); row[f"Nihai ile ARI ({k})"] = f2(d_["nihai_ile_ARI"])
+    rows.append(row)
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+## Roller
+
+`{python} KW.capitalize()` rol — `{python} ", ".join(ROLE[k].lower() for k in sorted(ROLE, key=int))` — esas olarak şut yeri, ribaund ve blok ile asist ilişkileri bakımından ayrışmıştır (@fig-prof). `{python} ("Rollerin tümü" if stable_roles == KM else f"{KW.capitalize()} rolden {stable_roles} tanesi")` tek tek kararlıdır (Jaccard ≥ 0,75); en az kararlı rol `{python} ROLE[str(weakest)].lower()` rolüdür (`{python} f2(JM[weakest - 1])`). Oyuncu-sezonların çoğunda sonsal üyelik açıktır (en yüksek sonsal olasılığı 0,7'nin altında kalan oyuncu-sezon oranı `{python} pct(FM["p_max_lt_07"], 1)`). `{python} KAW.capitalize()` rollü alternatifte kanat/forvet grubu çevre kanadı ve açılan forvet olarak ikiye ayrılmış; en az kararlı rol kanat olmuştur (Jaccard `{python} f2(min(FA["jaccard_kume"]))`).
+
+![Roller esas olarak şut yeri, ribaund ve blok ile asist ilişkileri bakımından ayrışmaktadır. Hücreler, seçilen rol değişkenlerinin (her rolün mutlak ortalaması en yüksek iki değişkeni) her roldeki sezon içi ortalama z-skorunu göstermektedir.](figures/fig2_role_profiles.png){#fig-prof width=100%}
+
+```{python}
+#| label: tbl-roles
+#| tbl-cap: "Top taşıyıcılar ve pota koruyucular çoğunlukla guard ve pivottur; diğer roller ise pozisyonları birleştirir (oyuncu-sezon sayısı, kararlılık, boy ve pozisyon payları; örnek oyuncular en çok dakika alanlardır)."
+roles = pd.read_csv(f"../data/processed/roles_final_K{KM}.csv")
+t = []
+for k in sorted(FM["pozisyon"], key=int):
+    pos = FM["pozisyon"][k]; tot = sum(pos.values())
+    ex = roles[roles["Arketip"] == int(k)].groupby("Player")["MIN"].sum().sort_values(ascending=False).index[:3]
+    t.append({"Rol": ROLE[k], "Oyuncu-sezon": n(FM["kume_N"][k]), "Jaccard": f3(JM[int(k) - 1]), "Boy (cm)": f1(FM["ortalama_boy"][k]),
+              "Guard": pct(pos.get("Guard", 0) / tot), "Forvet": pct(pos.get("Forward", 0) / tot), "Pivot": pct(pos.get("Center", 0) / tot),
+              "Örnekler": "; ".join(p.title() for p in ex)})
+pd.DataFrame(t).style.hide(axis="index")
+```
+
+## Roller ve kayıtlı pozisyonlar
+
+Roller kayıtlı pozisyonla güçlü biçimde ilişkilidir (Cramér V = `{python} f2(FM["cramers_v"])`, %95 GA `{python} ci(FM["cramers_v_GA95"])`; @tbl-roles, @fig-pos). Top taşıyıcı oyuncu-sezonlarında guard oranı `{python} pct(share("Ball handler", "Guard"))`, pota koruyucu oyuncu-sezonlarında pivot oranı `{python} pct(share("Rim protector", "Center"))` olmuştur. Kanat/forvet rolü çoğunlukla forvetlerden (`{python} pct(share("Wing/forward", "Forward"))`) oluşmakla birlikte kayda değer bir guard payı (`{python} pct(share("Wing/forward", "Guard"))`) içermektedir; iki pozisyonu birbirine yakın oranlarda birleştiren tek rol iç uzundur (pivot `{python} pct(share("Interior big", "Center"))`, forvet `{python} pct(share("Interior big", "Forward"))`). `{python} KAW.capitalize()` rollü alternatifte çevre kanadı rolünde guard oranı `{python} pct(share("Wing", "Guard", FA, ROLEA_EN))`, açılan forvet rolünde forvet oranı `{python} pct(share("Stretch forward", "Forward", FA, ROLEA_EN))` olmuştur.
+
+![Top taşıyıcılar ve pota koruyucular çoğunlukla guard ve pivottur; kanat/forvet ve iç uzun rolleri ise pozisyonları birleştirir. Çubuklar, her rolün oyuncu-sezonlarının kayıtlı pozisyona göre dağılımını göstermektedir (%8 ve üzeri paylar etiketlenmiştir).](figures/fig4_positions.png){#fig-pos width=80%}
+
+## Roller ve dizilim performansı
+
+RAPM `{python} n(MM["rapm_oyuncu_N"])` oyuncu için kestirilmiştir (ceza katsayısı `{python} n(MM["lambda"])`; ev sahibi avantajı 100 hücumda `{python} f2(MM["ev_sahibi_avantaji"])` sayı). 2023–2024 test segmentlerinde RAPM, net rating'in hücum ağırlıklı varyansının `{python} pct(MM["test_R2"]["RAPM"], 2)` kadarını açıklamıştır; segment düzeyindeki sonuçlarda beklendiği gibi tüm modellerin mutlak değerleri küçüktür. Test segmentlerindeki oyuncu görünümlerinin `{python} pct(MM["testte_egitimde_gorulen_oyuncu_payi"])` kadarı eğitimde görülmüş oyunculara aittir.
+
+Rol etiketleri her sezon kendi verisiyle belirlendiğinde rol bileşiminin eklenmesi (ceza katsayısı `{python} n(MM["rol_bilesimi"]["ceza"])`, çapraz doğrulamayla seçilmiştir) test R²'sini `{python} pp3(MM["rol_bilesimi"]["kazanc"])` yüzde puan artırmıştır (%95 GA `{python} pp3(DM["toplam_kazanc_GA95"][0])` ile `{python} pp3(DM["toplam_kazanc_GA95"][1])`); bu artış karıştırılmış rol etiketlerinin sağladığından büyüktür (@fig-perm; *p* `{python} fp(MM["rol_bilesimi"]["p"])`) ve rol sayılarından gelmektedir (`{python} pp3(DM["sayilar_kazanc"])` yüzde puan, %95 GA `{python} pp3(DM["sayilar_kazanc_GA95"][0])` ile `{python} pp3(DM["sayilar_kazanc_GA95"][1])`; *p* `{python} fp(DM["sayilar_p"])`). Ancak üç sızıntı denetiminin hiçbirinde pozitif kazanç bulunmamıştır (@tbl-comp, @fig-leak). Eğitim döneminde bilinen rollerle rol sayılarının kazancı `{python} pp3(LK["onceki_rol"]["sayilar_kazanc"])` yüzde puan (%95 GA `{python} pp3(LK["onceki_rol"]["sayilar_kazanc_GA95"][0])` ile `{python} pp3(LK["onceki_rol"]["sayilar_kazanc_GA95"][1])`); yeni oyuncu mekanizmasını sezonlar arası rol değişiminden ayıran, eğitimde görülen oyunculara güncel rol verilip yeni oyuncuların rolsüz bırakıldığı denetimde `{python} pp3(LK["yeni_oyuncu_rolsuz"]["sayilar_kazanc"])` (`{python} pp3(LK["yeni_oyuncu_rolsuz"]["sayilar_kazanc_GA95"][0])` ile `{python} pp3(LK["yeni_oyuncu_rolsuz"]["sayilar_kazanc_GA95"][1])`); on oyuncunun tamamının eğitimde görüldüğü test segmentlerinde (segmentlerin `{python} pct(LK["hepsi_gorulmus"]["test_segment_payi"])` kadarı) ise `{python} pp3(LK["hepsi_gorulmus"]["sayilar_kazanc"])` (`{python} pp3(LK["hepsi_gorulmus"]["sayilar_kazanc_GA95"][0])` ile `{python} pp3(LK["hepsi_gorulmus"]["sayilar_kazanc_GA95"][1])`) olmuştur. Bu aralıklar geniştir ve sezona özgü rollerle gözlenen büyüklükteki kazançları da içermektedir; dolayısıyla denetimler, özgün kazancın sıfır olduğunu değil sağlam olmadığını göstermektedir. `{python} KAW.capitalize()` rollü çözüm de benzer davranmıştır (hiçbir denetimde pozitif kazanç yok). Buna karşılık tezin yedi kümeli çözümünde, yeni oyuncular rolsüz bırakıldığında (`{python} pp3(MT['sizinti_denetimi']['yeni_oyuncu_rolsuz']['sayilar_kazanc'])` yüzde puan, *p* `{python} fp(MT['sizinti_denetimi']['yeni_oyuncu_rolsuz']['sayilar_p'])`) ve tüm oyuncuların görüldüğü alt kümede (*p* `{python} fp(MT['sizinti_denetimi']['hepsi_gorulmus']['sayilar_p'])`) küçük bir kazanç kalmış, eğitim dönemi rolleriyle ise kalmamıştır (*p* `{python} fp(MT['sizinti_denetimi']['onceki_rol']['sayilar_p'])`). Tez kümeleri oyuncu kalitesiyle ilişkili kutu skoru üretim oranlarından türetildiği için, RAPM'in büzdüğü kaliteyi kısmen yakalıyor olabilir; bu ayrıca sınanmamıştır.
+
+İkili rol çarpımları rol sayılarının ötesinde `{python} pp3(DM["ciftler_ek_kazanc"])` yüzde puan eklemiştir (%95 GA `{python} pp3(DM["ciftler_ek_GA95"][0])` ile `{python} pp3(DM["ciftler_ek_GA95"][1])`). Sinerjiyi saptama gücü sınırlıdır: en sık rol eşleşmesi olan ve test dizilimlerinin `{python} pct(P["cift_dizilim_payi_test"])` kadarında bulunan `{python} pair` çiftinin her birlikte bulunuşu için 100 hücumda 0,5, 1 ve 2 sayılık sinerjiler `{python} P["sim"]` simülasyonun sırasıyla `{python} pct(P["guc"]["0.5"])`, `{python} pct(P["guc"]["1.0"])` ve `{python} pct(P["guc"]["2.0"])` kadarında saptanmış; sinerji yokken yanlış pozitif oranı `{python} pct(P["guc"]["0.0"])` olmuştur. RAPM sinerji eklendikten sonra yeniden kestirildiği için, sık birlikte oynayan oyuncular arasındaki sinerjinin bir kısmı oyuncu puanlarına yansımaktadır; bu tür etkiler uygulamada da bu şekilde emilir. Dolayısıyla saptanabilir sinerjinin bulunmaması, en sık eşleşme için yalnızca 100 hücumda yaklaşık iki sayı ve üzerindeki sinerjileri dışlamaktadır.
+
+![Roller her sezon kendi verisiyle belirlendiğinde rol bileşimi, rastgele atanmış etiketlerden daha fazla öngörü bilgisi eklemektedir; bu kazanç sızıntı denetimlerinde tekrarlanmamıştır (@tbl-comp). Histogram: rol etiketleri sezon içinde oyuncu-sezonlar arasında karıştırıldıktan sonra rol bileşimi terimleri RAPM'e eklendiğinde hücum ağırlıklı örneklem dışı R²'deki (2023–2024 segmentleri) kazanç; kırmızı çizgi: gözlenen rol etiketleriyle elde edilen kazanç.](figures/fig3_permutation.png){#fig-perm width=80%}
+
+```{python}
+#| label: tbl-comp
+#| tbl-cap: "Rol bileşiminin RAPM'in ötesinde bilgi kattığına dair kanıt, test sezonu rollerinin nasıl atandığına bağlıdır (RAPM'e göre örneklem dışı R² kazancı; aynı RAPM modeli, ayarlanmış ceza katsayısı ve permütasyon şeması; yp = yüzde puan; p değerleri çoklu karşılaştırma için düzeltilmemiştir)."
+pv = lambda x: fp(x).replace("= ", "")
+rows = []
+for lab_, key in ((f"Nihai, {KM} rol (ana)", f"lineup_model_roles_final_K{KM}"), (f"Nihai, {KA} rol", f"lineup_model_roles_final_K{KA}"),
+                  ("Tezin 7 kümeli Ward çözümü", "lineup_model_thesis_archetypes"),
+                  ("Önceki 5 rollü çözüm (tam kovaryans)", "lineup_model_K5")):
+    m, dd, lk = R[key]["rol_bilesimi"], R[key]["ayristirma"], R[key].get("sizinti_denetimi", {})
+    rows.append({"Rol çözümü": lab_, "Toplam kazanç (yp)": pp3(m["kazanc"]), "p (toplam)": pv(m["p"]),
+                 "Rol sayıları kazancı (yp)": pp3(dd["sayilar_kazanc"]), "p (sayılar)": pv(dd["sayilar_p"]),
+                 "Çift artışı (yp, %95 GA)": f"{pp3(dd['ciftler_ek_kazanc'])} ({pp3(dd['ciftler_ek_GA95'][0])} ile {pp3(dd['ciftler_ek_GA95'][1])})",
+                 "p (sayılar), eğitim dönemi rolleri": pv(lk["onceki_rol"]["sayilar_p"]) if lk else "—",
+                 "p (sayılar), yeni oyuncular rolsüz": pv(lk["yeni_oyuncu_rolsuz"]["sayilar_p"]) if lk.get("yeni_oyuncu_rolsuz") else "—",
+                 "p (sayılar), tüm oyuncular görülmüş": pv(lk["hepsi_gorulmus"]["sayilar_p"]) if lk else "—"})
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Rol sayılarının kazancı yalnızca test sezonu rolleri test sezonu verisinden kestirildiğinde pozitiftir. Noktalar: rol sayılarının RAPM'e göre örneklem dışı R² kazancı; çubuklar: test maçlarının bootstrap örneklemlerinden %95 güven aralıkları; ana ve alternatif rol çözümleri ile tezin yedi kümeli çözümü için, sezona özgü rollerle ve üç sızıntı denetiminde.](figures/fig5_leakage.png){#fig-leak width=90%}
+
+## Duyarlılık analizi: rol kombinasyonu testleri
+
+Tüm dizilim-maçlar dahil edildiğinde saf prosedür, tez arketiplerinin "anlamlı" kombinasyonlar arasında rastgele olmayan biçimde dağıldığını göstermiştir (χ²(6) = `{python} f2(F0T["chi2"])`, *p* `{python} fp(F0T["chi2_p_naif"])`); bu durum permütasyon testinde de geçerlidir (*p* `{python} fp(F0T["permutasyon"]["chi2_p"])`). Şans eseri beklenenden (`{python} f1(F0T["permutasyon"]["null_anlamli_formul_ort"])`, *p* `{python} fp(F0T["permutasyon"]["anlamli_formul_sayisi_p"])`) fazla, `{python} F0T["anlamli_formul"]` kombinasyon seçilmiş ve bunlardan `{python} F0T["bh_fdr_sonrasi_kalan"]` tanesi yanlış keşif düzeltmesinden sonra kalmıştır. Ancak seçilen `{python} F0T["anlamli_formul"]` kombinasyondan `{python} F0T["anlamli_formul"] - F0T["anlamli_formul_pozitif"]` tanesinin net rating'i negatiftir; ağırlıksız ortalama net rating belirgin biçimde negatif (40 dakikada `{python} f1(F0T["NRTG40_ort_agirliksiz"])`), dakika ağırlıklı ortalama ise sıfıra yakındır (`{python} f1(F0T["NRTG40_ort_dakika_agirlikli"])`). Dizilim-maçların en az 2 dakika sürmesi koşulu konduğunda anlamlı kombinasyon sayısı (`{python} F2T["anlamli_formul"]`) şans eseri beklenen sayıyla örtüşmüş (`{python} f1(F2T["permutasyon"]["null_anlamli_formul_ort"])`, *p* `{python} fp(F2T["permutasyon"]["anlamli_formul_sayisi_p"])`), düzeltmeden sonra yalnızca `{python} F2T["bh_fdr_sonrasi_kalan"]` tanesi kalmış ve arketip dağılımı beklenenden farklı bulunmamıştır (χ²(6) = `{python} f2(F2T["chi2"])`, permütasyon *p* `{python} fp(F2T["permutasyon"]["chi2_p"])`).

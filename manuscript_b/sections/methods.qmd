@@ -2,7 +2,7 @@
 
 ## Data
 
-This retrospective observational study used all EuroLeague games from 2016–17 to 2024–25 (`{python} A["seasons"]` seasons, `{python} n(A["games"])` games) from the public EuroLeague application programming interface: box scores, play-by-play logs, shot coordinates and the player registry. Five-on-five lineup segments were reconstructed from substitution events, with starting lineups taken from the box score; segments with at least one estimated possession (`{python} n(L["segment_N"])`) were used. Segment net rating was the home-minus-away point difference per 100 possessions, with possessions estimated as field-goal attempts + 0.44 × free-throw attempts − offensive rebounds + turnovers [@kubatko2007starting]. Only public performance data were used, so ethical approval was not required. Reporting follows the STROBE statement where applicable.
+This retrospective observational study used all EuroLeague games from 2016–17 to 2024–25 (`{python} A["seasons"]` seasons, `{python} n(A["games"])` games) retrieved by the author from the public EuroLeague application programming interface: box scores, play-by-play logs, shot coordinates and the player registry. Five-on-five lineup segments were reconstructed from substitution events, with starting lineups taken from the box score; segments with at least one estimated possession (`{python} n(L["segment_N"])`) were used. Segment net rating was the home-minus-away point difference per 100 possessions, with possessions estimated as field-goal attempts + 0.44 × free-throw attempts − offensive rebounds + turnovers [@kubatko2007starting]. Only public performance data were used, so ethical approval was not required. Reporting follows the STROBE statement where applicable.
 
 ## Player value measures
 

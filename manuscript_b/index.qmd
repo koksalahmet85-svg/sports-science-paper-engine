@@ -55,7 +55,7 @@ The data source and part of the analytic approach were first used in the author'
 
 # Data and code availability {.unnumbered}
 
-All data were obtained from the public EuroLeague application programming interface. Code reproducing every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier before submission; the exact code version, random seed and package versions used are recorded in the results file (`provenance`).
+All data were retrieved by the author from the publicly accessible EuroLeague application programming interface (live.euroleague.net and api-live.euroleague.net) in November 2026, and all analyses were run by the author with the open-source code. Code reproducing every number, table and figure is available at https://github.com/koksalahmet85-svg/sports-science-paper-engine and will be archived with a persistent identifier before submission; the exact code version, random seed and package versions used are recorded in the results file (`provenance`).
 
 # Use of artificial intelligence {.unnumbered}
 

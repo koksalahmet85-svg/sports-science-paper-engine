@@ -1,0 +1,16 @@
+project:
+  type: default
+  output-dir: _output
+  render:
+    - index.qmd
+
+lang: tr
+bibliography: ../manuscript/references.bib
+link-citations: true
+execute:
+  echo: false
+  warning: false
+
+format:
+  docx:
+    number-sections: true

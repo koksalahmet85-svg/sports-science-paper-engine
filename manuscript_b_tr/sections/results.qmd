@@ -1,0 +1,56 @@
+# Bulgular
+
+## Oyuncu değer ölçütlerinin role bağımlılığı
+
+Rol, kutu skoru endekslerinde oyuncular arası varyansın büyük bir kısmını, RAPM'de ise neredeyse hiçbirini açıklamamıştır (@tbl-eta, @fig-bias): η², PIR40 için `{python} f2(V["eta2"]["PIR40"])` (%95 GA `{python} ci(V["eta2_GA95"]["PIR40"])`), VAL40 için `{python} f2(V["eta2"]["VAL40"])` (`{python} ci(V["eta2_GA95"]["VAL40"])`), RAPM için ise `{python} f3(V["eta2"]["RAPM"])` (`{python} ci(V["eta2_GA95"]["RAPM"], 3)`) olmuştur. En yüksek PIR40 değerleri pota koruyucularda ve iç uzunlarda, en düşük değerler kanat/forvetlerde görülmüş; RAPM ise roller arasında az farklılaşmıştır.
+
+PIR'in role bağımlılığı, rol değişkenleri ile PIR bileşenleri arasındaki örtüşmeyle, ölçüm hatasıyla ya da büzülmeyle açıklanamamıştır. Aynı RAPM'e sahip oyuncular arasında da rol PIR40 varyansının önemli bir kısmını açıklamıştır (kısmi η² = `{python} f2(CV["kismi_eta2"])`, %95 GA `{python} ci(CV["GA95"])`). Aynı RAPM düzeyinde pota koruyucular 40 dakikada `{python} f1(CV['rol_farki_RAPM_sabit'][rid['Rim protector']])` (%95 GA `{python} ci(CV['rol_farki_GA95'][rid['Rim protector']])`), iç uzunlar `{python} f1(CV['rol_farki_RAPM_sabit'][rid['Interior big']])` (`{python} ci(CV['rol_farki_GA95'][rid['Interior big']])`) PIR puanı `{python} REF`lardan yüksek, kanat/forvetler ise `{python} f1(CV['rol_farki_RAPM_sabit'][rid['Wing/forward']])` (`{python} ci(CV['rol_farki_GA95'][rid['Wing/forward']])`) puan farklı değerlendirilmiştir. Aynı RAPM düzeyindeki rol farkları @fig-cond'de gösterilmiştir. Referans rol seçimine bağlı olmayan, aynı RAPM düzeyindeki en büyük rol farkı 40 dakikada `{python} f1(CV['rol_araligi'])` PIR puanıdır. RAPM'deki ölçüm hatası, maçların bir yarısından hesaplanan RAPM'in diğer yarıdan hesaplanan RAPM ile araçlandırılması ve PIR40'ın yordayıcıyla aynı yarıdan alınmasıyla ele alındığında bu farklar neredeyse değişmemiştir (pota koruyucular `{python} f1(IV['cift']['rol_farki'][rid['Rim protector']])`, %95 GA `{python} ci(IV['cift']['rol_farki_GA95'][rid['Rim protector']])`; iç uzunlar `{python} f1(IV['cift']['rol_farki'][rid['Interior big']])`, `{python} ci(IV['cift']['rol_farki_GA95'][rid['Interior big']])`; en büyük fark `{python} f1(IV['cift']['en_buyuk_rol_araligi'])`, `{python} ci(IV['cift']['en_buyuk_rol_araligi_GA95'])`); yarılar yer değiştirildiğinde en büyük fark `{python} f1(IV['tek']['en_buyuk_rol_araligi'])` olmuştur (`{python} ci(IV['tek']['en_buyuk_rol_araligi_GA95'])`; n = `{python} n(IV["oyuncu_N"])`). Eşlik eden analizdeki `{python} WORD_TR[V['K_duyarliligi']['K']]` rollü alternatifle PIR40 için η² `{python} f2(V['K_duyarliligi']['eta2']['PIR40'])`, aynı RAPM düzeyinde kısmi η² `{python} f2(V['K_duyarliligi']['kismi_eta2_PIR40'])` (%95 GA `{python} ci(V['K_duyarliligi']['kismi_eta2_PIR40_GA95'])`) ve en büyük rol farkı `{python} f1(V['K_duyarliligi']['rol_araligi_RAPM_sabit_PIR40'])` puan olmuştur. PIR bileşeni içermeyen rollerle PIR40 için η² `{python} f2(V["pir_bilesensiz_roller"]["eta2"]["PIR40"])`, kullanım, hızlı hücum ve ikinci şans oranları da dışlandığında `{python} f2(V["pir_bilesensiz_roller_kati"]["eta2"]["PIR40"])` olmuştur (RAPM: `{python} f3(V['pir_bilesensiz_roller_kati']['eta2']['RAPM'])`). Yarıya bölme güvenirliği PIR40 için `{python} f2(V["guvenirlik"]["PIR40"]["spearman_brown"])`, RAPM için `{python} f2(V["guvenirlik"]["RAPM"]["spearman_brown"])` bulunmuş (n = `{python} n(V["guvenirlik"]["oyuncu_N"])` oyuncu); güvenirliğe göre düzeltilmiş η² RAPM için `{python} f3(V['eta2_duzeltilmis']['RAPM'])`, PIR40 için `{python} f2(V["eta2_duzeltilmis"]["PIR40"])` olmuştur. Daha zayıf bir RAPM cezası RAPM değerlerinin yayılımını artırmış (SS 100 hücumda `{python} f2(V["rapm_sd"]["ana"])` sayıdan `{python} f2(V["rapm_sd"]["l1000"])` sayıya), ancak η²'yi artırmamıştır (`{python} f3(V['eta2']['RAPM_l1000'])`). PIR40 ile RAPM arasındaki korelasyon zayıftır (*r* = `{python} f2(V["korelasyon"]["RAPM"]["PIR40"])`).
+
+```{python}
+#| label: tbl-eta
+#| tbl-cap: "Kutu skoru endeksleri roller arasında RAPM'den çok daha fazla farklılaşmaktadır (ana role göre ortalama değer ve rolün açıkladığı varyans payı; kariyer dakika eşiğini karşılayan oyuncular)."
+m = V["rol_ortalamasi_ham"]
+rows = [{"Rol": ROLE[k], "Oyuncu": n(V["rol_N"][k]), "PIR40": f2(m[k]['PIR40']), "VAL40": f2(m[k]['VAL40']), "RAPM": f2(m[k]['RAPM'])} for k in sorted(m, key=int)]
+rows.append({"Rol": "η² (%95 GA)", "Oyuncu": n(V["oyuncu_N"]),
+             "PIR40": f"{f2(V['eta2']['PIR40'])} ({ci(V['eta2_GA95']['PIR40'])})",
+             "VAL40": f"{f2(V['eta2']['VAL40'])} ({ci(V['eta2_GA95']['VAL40'])})",
+             "RAPM": f"{f3(V['eta2']['RAPM'])} ({ci(V['eta2_GA95']['RAPM'], 3)})"})
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Kutu skoru endeksleri, RAPM'in aksine, oyuncu rolleri arasında sistematik olarak farklılaşmaktadır. Çubuklar, kariyer dakika eşiğini karşılayan oyuncular için her değer ölçütünün ana role göre oyuncular arasında standartlaştırılmış (z-skoru) ortalamasını göstermektedir; η² ve güven aralığı @tbl-eta'da verildiği için hata çubukları gösterilmemiştir.](figures/fig1_role_bias.png){#fig-bias width=90%}
+
+![Aynı RAPM'e sahip oyuncular arasında iç roller, top taşıyıcılara ve kanat/forvetlere göre daha yüksek PIR değeri almaktadır. Noktalar: aynı RAPM düzeyinde top taşıyıcılara göre 40 dakikada PIR farkı; RAPM'e koşullu regresyonla ve maçların diğer yarısından hesaplanan RAPM'in araç değişken olarak kullanıldığı iki aşamalı en küçük kareler yöntemiyle kestirilmiştir; çubuklar: oyuncu bootstrap'ından %95 güven aralıkları.](figures/fig4_conditional.png){#fig-cond width=80%}
+
+## Örneklem dışı öngörü geçerliği
+
+2023–2024 segmentlerinde RAPM, net rating'in hücum ağırlıklı varyansının %`{python} pp2(T["RAPM"])` kadarını açıklamış; bu oran toplam PIR40 için %`{python} pp2(T["PIR40_toplami"])`, toplam VAL40 için %`{python} pp2(T["VAL40_toplami"])` olmuştur. RAPM'in üstünlüğü PIR40'a göre `{python} pp2(T["RAPM"] - T["PIR40_toplami"])` yüzde puan (%95 GA `{python} cipp(T["fark_GA95"]["RAPM-PIR40"])`), VAL40'a göre `{python} pp2(T["RAPM"] - T["VAL40_toplami"])` yüzde puandır (`{python} cipp(T["fark_GA95"]["RAPM-VAL40"])`) (güven aralıkları maç bootstrap'ından); dolayısıyla bu üstünlüğün şansa bağlı olması olası değildir. Tek tek dizilim segmentlerinde beklendiği gibi tüm yordayıcıların mutlak değerleri küçüktür.
+
+## Dizilim değerinin sezon içi geçerliği
+
+Takım içi dizilim değerindeki bir standart sapmalık artış başına ikinci yarı net rating'i 100 hücumda RAPM için `{python} slope("RAPM")`, ilk yarı dakikaları için `{python} slope("DAKIKA")` sayı değişmiştir; kutu skoru ölçütlerinin tamamının güven aralıkları ise, ister ilk yarıdan (PIR40 `{python} slope("PIR40_sezon")`) ister tüm önceki veriden (PIR40 `{python} slope("PIR40_havuz")`; VAL40 `{python} slope("VAL40_havuz")`) hesaplansın, sıfırı içermiştir (@fig-slope). Kutu skoru değerleri az dakika alan oyuncular için hesaplanamamış ve havuz verisiyle segmentlerin `{python} pct(I['kapsam']['PIR40_havuz'])` kadarını kapsamıştır. Tüm ölçütlerin tanımlı olduğu ortak alt kümede (segmentlerin `{python} pct(I['ortak_alt_kume']['segment_payi'])` kadarı) RAPM eğimi daha küçük bulunmuş (`{python} f2(I['ortak_alt_kume']['RAPM']['egim'])`, %95 GA `{python} ci(I['ortak_alt_kume']['RAPM']['GA95'])`), dakika eğimi artık sıfırı dışlamamış (`{python} f2(I['ortak_alt_kume']['DAKIKA']['egim'])`, `{python} ci(I['ortak_alt_kume']['DAKIKA']['GA95'])`) ve RAPM ile havuz PIR40 (`{python} ci(I['ortak_alt_kume']['RAPM-PIR40_havuz']['GA95'])`) ve dakika (`{python} ci(I['ortak_alt_kume']['RAPM-DAKIKA']['GA95'])`) arasındaki eşleştirilmiş farklar sıfırı içermiştir. Dolayısıyla sezon içi karşılaştırma, herhangi bir ölçütün diğerinden daha iyi olduğunu göstermemektedir.
+
+![Sezon içinde RAPM tabanlı dizilim değerinin ve ilk yarı dakikalarının güven aralıkları sıfırı dışlamakta, kutu skoru endekslerinin hiçbirininki dışlamamaktadır. Noktalar: takım içi dizilim değerindeki bir standart sapmalık artış başına, rakip RAPM'i ve ev sahipliğine göre düzeltilmiş ikinci yarı net rating değişimi; çubuklar: takım-sezon bootstrap'ından %95 güven aralıkları. Ölçütler arası farklar bu şekilde sınanmamıştır; metne bakınız.](figures/fig2_slopes.png){#fig-slope width=85%}
+
+## Optimize dizilimler ve antrenör rotasyonu
+
+İlk yarıda en çok dakika verilen beş oyuncudan en az dördünü içeren ikinci yarı segmentleri, takımın diğer segmentlerinden 100 hücumda `{python} contrast("DAKIKA_yok")` sayı daha iyi performans göstermiştir. Optimize beşliler bu ölçütle ortalama beş oyuncudan yaklaşık üçünü paylaşmış ve hücumların daha küçük bir kısmında gözlenmiştir (@tbl-ilp). Her iki beşlinin de gözlendiği takım-sezonlar içindeki doğrudan karşılaştırmalarda hiçbir optimizasyon varyantı aynı kısıt altındaki antrenör ölçütünden saptanabilir biçimde farklılaşmamıştır: farklar 100 hücumda `{python} f2(min(v['fark'] for v in DC.values()))` ile `{python} f2(max(v['fark'] for v in DC.values()))` sayı arasında değişmiş ve %95 güven aralıklarının tümü sıfırı içermiştir (@fig-ilp). Bu aralıklar geniştir (en fazla `{python} f1(max(v['GA95'][1] - v['GA95'][0] for v in DC.values()))` sayı); dolayısıyla 100 hücumda birkaç sayılık farklar her iki yönde de dışlanamamaktadır. Optimize beşli içeren segmentlerin %`{python} f"{100 * min(v['iki_gruba_da_giren_pay'] for v in DC.values()):.0f}"` ile %`{python} f"{100 * max(v['iki_gruba_da_giren_pay'] for v in DC.values()):.0f}"` arasındaki kısmı antrenör beşlisini de içerdiği için bu karşılaştırmalardan çıkarılmıştır.
+
+```{python}
+#| label: tbl-ilp
+#| tbl-cap: "Optimize beşliler antrenörün en çok kullandığı beşliyle yaklaşık üç oyuncu paylaşmakta ve doğrudan karşılaştırmalar ondan bir fark göstermemektedir (takımın diğer dizilimlerine göre ikinci yarı net rating'i; aynı kısıt altında antrenör ölçütünden takım içi doğrudan fark; hücum payı; takım-sezon sayısı; antrenör beşlisiyle ortak oyuncu)."
+SEL = {"DAKIKA": "En çok kullanılan oyuncular (antrenör)", "PIR40_sezon": "PIR40", "VAL40_sezon": "VAL40", "RAPM": "RAPM"}
+RULE = {"yok": "yok", "tez": "≥ 1 pota koruyucu", "dengeli": "dengeli"}
+rows = []
+for m_ in SEL:
+    for r_ in RULE:
+        k = f"{m_}_{r_}"
+        rows.append({"Seçim": SEL[m_], "Kısıt": RULE[r_],
+                     "Takımın diğer dizilimlerine göre": f"{f2(C[k]['fark'])} ({ci(C[k]['GA95'])})",
+                     "Antrenör beşlisine göre (doğrudan)": "—" if m_ == "DAKIKA" else f"{f2(DC[k]['fark'])} ({ci(DC[k]['GA95'])}; {DC[k]['takim_sezon']} takım-sezon)",
+                     "Hücum payı": pct(C[k]['hucum_payi'], 1), "Takım-sezon": C[k]["takim_sezon"],
+                     "Antrenör beşlisiyle ortak": "—" if m_ == "DAKIKA" else f1(OV[k])})
+pd.DataFrame(rows).style.hide(axis="index")
+```
+
+![Hiçbir optimizasyon varyantı antrenörün en çok kullandığı oyunculardan saptanabilir biçimde farklılaşmamaktadır. Noktalar: aynı kısıt altında optimize beşliyi (ancak antrenör beşlisini değil) içeren segmentler ile antrenör beşlisini (ancak optimize beşliyi değil) içeren segmentler arasında rakibe göre düzeltilmiş ikinci yarı net rating'indeki takım içi doğrudan fark; çubuklar: takım-sezon bootstrap'ından %95 güven aralıkları.](figures/fig3_ilp.png){#fig-ilp width=85%}

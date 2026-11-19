@@ -1,0 +1,66 @@
+---
+title: "Kutu skoru performans endeksleri oyuncu rolüne bağlıdır ve dizilim seçiminde antrenör rotasyonlarına göre saptanabilir bir üstünlük göstermez: EuroLeague basketbolunda örneklem dışı bir değerlendirme"
+author:
+  - name: Ahmet Köksal
+    corresponding: true
+keywords: [basketbol, performans endeksi, artı-eksi, dizilim optimizasyonu, tam sayılı programlama, EuroLeague]
+---
+
+```{python}
+#| label: setup
+import json, pathlib
+import pandas as pd
+from tr_common import n, f1, f2, f3, pct, pp2, fp, ci, ROLE_TR, WORD_TR
+AN = pathlib.Path("../manuscript/analysis")
+R = json.loads((AN / "results.json").read_text())
+KM = R["roles_final"]["K"]
+ROLE_EN = json.loads((AN / ("role_names.json" if KM == 5 else f"role_names_K{KM}.json")).read_text())
+ROLE = {k: ROLE_TR[v] for k, v in ROLE_EN.items()}
+rid = {v: k for k, v in ROLE_EN.items()}
+A, V, L, I = R["paper_a"], R["paper_b_values"], R[f"lineup_model_roles_final_K{KM}"], R["ilp_validation"]
+DC = I["dogrudan_eslestirilmis_fark"]
+CV = V["RAPM_kosullu"]["PIR40"]; IV = V["olcum_hatasi_denetimi"]
+REF = ROLE["1"].lower()
+T, S, C = L["test_R2"], I["amac_fonksiyonu_egimi"], I["ilp_beslisi"]
+OV = I["antrenor_beslisiyle_ortak_oyuncu"]
+pc0 = lambda x: pct(x, 0) if x >= 0.05 else pct(x, 1)
+cipp = lambda v: f"{pp2(v[0])} ile {pp2(v[1])}"
+def slope(k): return f"{f2(S[k]['egim'])} (%95 GA {ci(S[k]['GA95'])})"
+def contrast(k): return f"{f2(C[k]['fark'])} (%95 GA {ci(C[k]['GA95'])})"
+sgn = lambda x: ("+" if x > 0 else "") + f1(x)
+```
+
+# Özet {.unnumbered}
+
+```{python}
+#| output: asis
+print(f"**Amaç:** EuroLeague Performans Endeksi (PIR) gibi kutu skoru endeksleri oyuncuları değerlendirmek için yaygın biçimde kullanılmakta, karar destek çerçeveleri de dizilimleri bu değerler üzerinden optimize etmektedir. Bu endekslerin sahadaki etkinin ötesinde oyuncu rolüne bağlı olup olmadığı, gelecekteki dizilim performansını öngörüp öngörmediği ve bunlarla optimize edilen dizilimlerin antrenörlerin kendi tercihlerinden daha başarılı olup olmadığı sınanmıştır. "
+f"**Yöntem:** Dokuz EuroLeague sezonu ({n(A['games'])} maç) analiz edilmiştir. 40 dakika başına PIR ve ona yakın bir bileşik endeks (VAL), düzenlileştirilmiş düzeltilmiş artı-eksi (RAPM) ile karşılaştırılmıştır. Role bağımlılık, {WORD_TR[KM]} veriye dayalı oyuncu rolünün açıkladığı varyans olarak koşulsuz biçimde ve aynı RAPM'e sahip oyuncular arasında nicelenmiştir. Öngörü geçerliği örneklem dışında (eğitim 2016–2022, test 2023–2024) ve sezon içinde (değerler ilk yarıdan, sonuçlar ikinci yarıdan) değerlendirilmiştir. Tam sayılı doğrusal programlama her takımın en yüksek değerli beşlisini seçmiş ve bu beşli ilk yarıda en çok dakika verilen beş oyuncuyla doğrudan karşılaştırılmıştır. "
+f"**Bulgular:** Rol, oyuncular arası varyansın PIR'de {pc0(V['eta2']['PIR40'])} kadarını, RAPM'de ise yalnızca {pc0(V['eta2']['RAPM'])} kadarını açıklamıştır. Aynı RAPM'e sahip oyuncular arasında da rol PIR varyansının {pc0(CV['kismi_eta2'])} kadarını açıklamış; pota koruyucular ve iç uzunlar {REF}lardan 40 dakikada yaklaşık {f1(CV['rol_farki_RAPM_sabit'][rid['Rim protector']])} ve {f1(CV['rol_farki_RAPM_sabit'][rid['Interior big']])} PIR puanı yüksek değerlendirilmiştir; bu örüntü RAPM'deki ölçüm hatası düzeltildikten sonra ve PIR bileşeni içermeyen rollerle de sürmüştür. Örneklem dışında RAPM dizilim net rating varyansının %{pp2(T['RAPM'])} kadarını, PIR ise %{pp2(T['PIR40_toplami'])} kadarını açıklamıştır (fark {pp2(T['RAPM'] - T['PIR40_toplami'])} yüzde puan, %95 GA {cipp(T['fark_GA95']['RAPM-PIR40'])}). Sezon içinde güven aralığı sıfırı dışlayan ölçütler RAPM tabanlı dizilim değeri ve ilk yarı dakikalarıdır; kutu skoru ölçütlerinin hiçbiri sıfırı dışlamamıştır. Takım içi doğrudan karşılaştırmalarda optimize beşliler, antrenörün en çok kullandığı beşliden 100 hücumda {sgn(min(v['fark'] for v in DC.values()))} ile {sgn(max(v['fark'] for v in DC.values()))} sayı farklılaşmış ve %95 güven aralıklarının tamamı sıfırı içermiştir. "
+f"**Sonuç:** PIR türü endeksler, sahadaki etkisi aynı olan oyuncular arasında iç rolleri daha yüksek değerlendirmektedir ve farklı rollerdeki oyuncuları karşılaştırmak için kullanılmamalıdır. Bu değerlerle veya artı-eksi değerleriyle yapılan dizilim optimizasyonunun antrenör rotasyonlarına göre bir üstünlüğüne dair kanıt bulunmamıştır; ancak 100 hücumda birkaç sayılık farklar her iki yönde de dışlanamamaktadır. Dizilim karar araçları antrenörlerin tercihlerine karşı değerlendirilmelidir.")
+```
+
+{{< include sections/introduction.qmd >}}
+
+{{< include sections/methods.qmd >}}
+
+{{< include sections/results.qmd >}}
+
+{{< include sections/discussion.qmd >}}
+
+# Önceki yayılım {.unnumbered}
+
+Veri kaynağı ve analitik yaklaşımın bir kısmı ilk kez yazarın doktora tezinde (Ege Üniversitesi, Türkiye) kullanılmıştır; tez ulusal tez veri tabanından erişilebilirdir. Tezin rol kümeleme ve dizilim optimizasyonu sonuçları burada yeniden incelenmiş ve kısmen düzeltilmiştir: tezdeki yedi oyuncu arketipi yeniden örneklemede yeniden üretilememiş ve tezin dizilim optimizasyonu yaklaşımı örneklem dışında antrenör rotasyonlarından daha iyi sonuç vermemiştir. Tezin tam künyesi gönderimden önce eklenecektir. Aynı veriyle hazırlanan eşlik eden bir makale farklı bir soruyu (işlevsel oyuncu rollerinin türetilmesi ve kararlılığı) ele almaktadır.
+
+# Veri ve kod erişilebilirliği {.unnumbered}
+
+Tüm veriler yazar tarafından Kasım 2026'da herkese açık EuroLeague uygulama programlama arayüzünden (live.euroleague.net ve api-live.euroleague.net) indirilmiş ve tüm analizler yazar tarafından açık kaynak kodla yürütülmüştür. Tüm sayı, tablo ve şekilleri yeniden üreten kod https://github.com/koksalahmet85-svg/sports-science-paper-engine adresinde erişime açıktır ve gönderimden önce kalıcı bir tanımlayıcıyla arşivlenecektir; kullanılan kod sürümü, rastgele tohum ve paket sürümleri sonuç dosyasında (`provenance`) kayıtlıdır.
+
+# Yapay zekâ kullanımı {.unnumbered}
+
+Literatür taraması, programlama ve dil düzenlemesinde üretken bir yapay zekâ asistanından (Claude, Anthropic) yararlanılmıştır. Tüm sayısal sonuçlar deterministik, sürüm kontrollü kodla üretilmiş; tüm kaynaklar, analizler ve yorumlar yazar tarafından doğrulanmıştır ve içeriğin tüm sorumluluğu yazara aittir.
+
+# Kaynaklar {.unnumbered}
+
+::: {#refs}
+:::

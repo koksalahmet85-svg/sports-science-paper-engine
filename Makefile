@@ -30,11 +30,13 @@ paper-a:            ## Makale A'nın tüm sayıları (data hedefinden sonra; ~60
 	$(MAKE) formula-test
 
 paper-b:            ## Makale B'nin tüm sayıları (paper-a'dan sonra)
-	cd manuscript/analysis && python paper_b_values.py && python ilp_validation.py && python figures_paper_b.py
+	cd manuscript/analysis && python paper_b_values.py && python ilp_validation.py && python figures_paper_b.py && python figures_paper_b.py --lang tr && python figures_paper_a.py --lang tr
 
 render-all: check-cites ## iki makaleyi docx olarak üret
 	cd manuscript && quarto render --to docx
 	cd manuscript_b && quarto render --to docx
+	cd manuscript_tr && quarto render --to docx
+	cd manuscript_b_tr && quarto render --to docx
 
 analysis:
 	python manuscript/analysis/run.py

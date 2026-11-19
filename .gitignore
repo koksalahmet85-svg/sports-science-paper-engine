@@ -13,3 +13,8 @@ data/processed/
 manuscript_b/_output/
 manuscript_b/.quarto/
 manuscript_b/*_files/
+manuscript_tr/_output/
+manuscript_tr/.quarto/
+manuscript_b_tr/_output/
+manuscript_b_tr/.quarto/
+__pycache__/

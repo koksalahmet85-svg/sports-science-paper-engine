@@ -1,0 +1,81 @@
+---
+title: "EuroLeague basketbolunda işlevsel oyuncu rolleri: kararlılık, kayıtlı pozisyonlarla örtüşme ve dizilim performansına oyuncu kalitesinin ötesinde sağlam bir katkının bulunmaması"
+author:
+  - name: Ahmet Köksal
+    corresponding: true
+keywords: [basketbol, kümeleme analizi, oyuncu rolleri, dizilim, artı-eksi, EuroLeague]
+---
+
+```{python}
+#| label: setup
+import json, pathlib
+import pandas as pd
+from tr_common import n, f1, f2, f3, pct, pp3, fp, ci, ROLE_TR, WORD_TR
+AN = pathlib.Path("../manuscript/analysis")
+R = json.loads((AN / "results.json").read_text())
+A, RF = R["paper_a"], R["roles_final"]
+SC = RF["tarama"]
+COV = RF["kovaryans"]
+COV_TR = {"tied": "ortak (tied)", "diag": "köşegen (diag)"}[COV]
+KM = RF["K"]; KA = 5 if KM == 4 else 4
+KW, KAW = WORD_TR[KM], WORD_TR[KA]
+_names = lambda k: json.loads((AN / ("role_names.json" if k == 5 else f"role_names_K{k}.json")).read_text())
+ROLE_EN, ROLEA_EN = _names(KM), _names(KA)
+ROLE = {k: ROLE_TR[v] for k, v in ROLE_EN.items()}
+FM, FA = RF["nihai"][f"K{KM}"], RF["nihai"][f"K{KA}"]
+MM, MA = R[f"lineup_model_roles_final_K{KM}"], R[f"lineup_model_roles_final_K{KA}"]
+MT = R["lineup_model_thesis_archetypes"]
+DM, DA = MM["ayristirma"], MA["ayristirma"]
+LK = MM["sizinti_denetimi"]
+F0T, F2T = R["formula_test_corrected_min0_tezarketip"], R["formula_test_corrected_min2_tezarketip"]
+def share(role_name, pos, F=None, names=None):
+    F, names = (F or FM), (names or ROLE_EN)
+    k = {v: kk for kk, v in names.items()}[role_name]
+    t = F["pozisyon"][k]
+    return t.get(pos, 0) / sum(t.values())
+JM = FM["jaccard_kume"]
+stable_roles = sum(j >= 0.75 for j in JM)
+weakest = min(range(len(JM)), key=lambda i: JM[i]) + 1
+P = MM["guc"]
+pair = " × ".join(ROLE[str(i)].lower() for i in P["cift"])
+```
+
+# Özet {.unnumbered}
+
+```{python}
+#| output: asis
+print(f"**Amaç:** Veriye dayalı oyuncu rolleri, pozisyonsuz basketbolu betimlemek ve dizilim kurgusuna yön vermek için giderek daha sık kullanılmaktadır; ancak bu rollerin kararlılığı ve dizilim performansını oyuncu kalitesinin ötesinde açıklayıp açıklamadığı nadiren sınanmaktadır. "
+f"**Yöntem:** 2016–17 ile 2024–25 arasındaki tüm EuroLeague maçları ({n(A['games'])} maç) resmî kutu skorları, oyun akışı kayıtları, şut koordinatları ve asist bağlantıları kullanılarak analiz edilmiştir. "
+f"Rol değişkenleri (sahadaki paydalarla hesaplanan hücum payları, şut profili ve asist ağı göstergeleri) {n(RF['fit_N'])} oyuncu-sezonda Gauss karışım modelleriyle kümelenmiş; rol sayısı oyuncu düzeyinde bootstrap kararlılığına göre seçilmiştir. "
+f"Rol bileşimi, dizilim net rating'ine karşı örneklem dışı olarak (eğitim 2016–2022, test 2023–2024) sınanmış; oyuncu kalitesi düzenlileştirilmiş düzeltilmiş artı-eksi (RAPM) ile kontrol edilmiş, rol etiketi permütasyon testi, sızıntı denetimleri ve güç simülasyonu uygulanmıştır. "
+f"**Bulgular:** Dört rol seçilmiştir (ortalama bootstrap Jaccard {f2(FM['jaccard_ort'])}); beş rollü çözüm neredeyse aynı kararlılıktadır ({f2(FA['jaccard_ort'])}), altı ve daha fazla rol ise daha önce kullanılan yedi kümeli çözüm ({f2(A['thesis_ward7_jaccard_mean'])}) gibi kararsızdır. "
+f"Top taşıyıcılarda guard oranı {pct(share('Ball handler', 'Guard'))}, pota koruyucularda pivot oranı {pct(share('Rim protector', 'Center'))} iken iç uzunlar pivot ve forvetleri birleştirmektedir (Cramér V = {f2(FM['cramers_v'])}). "
+f"Roller her sezon kendi verisiyle belirlendiğinde rol sayıları RAPM'in ötesinde örneklem dışı öngörüyü iyileştirmiştir (permütasyon p {fp(DM['sayilar_p'])}); ancak test sezonu rollerinin yalnızca eğitim döneminde bilinen bilgiyle verildiği denetim dahil üç sızıntı denetiminin hiçbirinde pozitif kazanç kalmamıştır (kazanç {pp3(LK['onceki_rol']['sayilar_kazanc'])} yüzde puan, %95 GA {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][0])} ile {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][1])}). "
+f"İkili rol terimleri saptanabilir bir bilgi eklememiştir; en sık rol eşleşmesi için güç, 100 hücumda 1 sayılık sinerjide {pct(P['guc']['1.0'])}, 2 sayılık sinerjide {pct(P['guc']['2.0'])} olmuştur. "
+f"**Sonuç:** Açık EuroLeague verisinden dört-beş işlevsel rol yeniden üretilebilir biçimde elde edilebilmektedir ve bu roller oyuncuları betimlemek için yararlıdır. Rol bileşiminin dizilim performansına bireysel oyuncu kalitesinin ötesinde katkı yaptığına dair sağlam bir kanıt bulunamamış; 100 hücumda yaklaşık iki sayıdan küçük sinerjiler ne saptanabilmiş ne de dışlanabilmiştir.")
+```
+
+{{< include sections/introduction.qmd >}}
+
+{{< include sections/methods.qmd >}}
+
+{{< include sections/results.qmd >}}
+
+{{< include sections/discussion.qmd >}}
+
+# Önceki yayılım {.unnumbered}
+
+Veri kaynağı ve analitik yaklaşımın bir kısmı ilk kez yazarın doktora tezinde (Ege Üniversitesi, Türkiye) kullanılmıştır; tez ulusal tez veri tabanından erişilebilirdir. Tezin rol kümeleme ve dizilim optimizasyonu sonuçları burada yeniden incelenmiş ve kısmen düzeltilmiştir: tezdeki yedi oyuncu arketipi yeniden örneklemede yeniden üretilememiş ve arketip kombinasyonlarına ilişkin test çok kısa dizilimlere duyarlı bulunmuştur. Tezin tam künyesi gönderimden önce eklenecektir. Aynı veriyle hazırlanan eşlik eden bir makale farklı bir soruyu (kutu skoru değer endekslerinin öngörü geçerliği ve dizilim optimizasyonu) ele almaktadır.
+
+# Veri ve kod erişilebilirliği {.unnumbered}
+
+Tüm veriler yazar tarafından Kasım 2026'da herkese açık EuroLeague uygulama programlama arayüzünden (live.euroleague.net ve api-live.euroleague.net) indirilmiş ve tüm analizler yazar tarafından açık kaynak kodla yürütülmüştür. Verileri indiren ve tüm sayı, tablo ve şekilleri yeniden üreten kod https://github.com/koksalahmet85-svg/sports-science-paper-engine adresinde erişime açıktır ve gönderimden önce kalıcı bir tanımlayıcıyla arşivlenecektir; kullanılan kod sürümü, rastgele tohum ve paket sürümleri sonuç dosyasında (`provenance`) kayıtlıdır.
+
+# Yapay zekâ kullanımı {.unnumbered}
+
+Literatür taraması, programlama ve dil düzenlemesinde üretken bir yapay zekâ asistanından (Claude, Anthropic) yararlanılmıştır. Tüm sayısal sonuçlar deterministik, sürüm kontrollü kodla üretilmiş; tüm kaynaklar, analizler ve yorumlar yazar tarafından doğrulanmıştır ve içeriğin tüm sorumluluğu yazara aittir.
+
+# Kaynaklar {.unnumbered}
+
+::: {#refs}
+:::
