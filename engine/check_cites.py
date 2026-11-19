@@ -11,7 +11,7 @@ CROSSREF = ("fig-", "tbl-", "sec-", "eq-", "lst-")
 def main() -> int:
     bib = set(re.findall(r"@\w+\{([^,\s]+),", (ROOT / "manuscript" / "references.bib").read_text()))
     missing = {}
-    for qmd in [*(ROOT / "manuscript").rglob("*.qmd"), *(ROOT / "manuscript_b").rglob("*.qmd")]:
+    for qmd in [q for d in ("manuscript", "manuscript_b", "manuscript_tr", "manuscript_b_tr") for q in (ROOT / d).rglob("*.qmd")]:
         text = re.sub(r"<!--.*?-->", "", qmd.read_text(), flags=re.S)
         text = re.sub(r"```.*?```", "", text, flags=re.S)
         for key in re.findall(r"(?<![\w.])-?@([A-Za-z0-9_][\w:.#$%&+?<>~/-]*\w)", text):
