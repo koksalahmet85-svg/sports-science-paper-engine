@@ -56,7 +56,8 @@ TR = {
     "Season-specific roles": "Sezona özgü roller", "Training-period roles": "Eğitim dönemi rolleri",
     "New players without role": "Yeni oyuncular rolsüz", "All players seen in training": "Tüm oyuncular eğitimde görülmüş",
     "Gain from role counts in out-of-time R² (percentage points)": "Rol sayılarının örneklem dışı R² kazancı (yüzde puan)",
-    "Thesis (7 clusters)": "Tez (7 küme)", "4 roles (main)": "4 rol (ana)", "5 roles": "5 rol",
+    "Thesis (7 clusters)": "Tez (7 küme)", "Season": "Sezon", "Share of minutes": "Dakika payı",
+    "3-pt attempt rate": "Üçlük deneme oranı", "League": "Lig", "4 roles (main)": "4 rol (ana)", "5 roles": "5 rol",
 }
 LANG = "en"
 FIG = HERE.parent / "figures"
@@ -177,6 +178,33 @@ def fig5() -> None:
     plt.close(fig)
 
 
+def fig6() -> None:
+    rt = R["role_trends"]
+    sh = rt[f"K{KM}"]["pay_sezon"]
+    seasons = sorted(sh, key=int)
+    x = [int(s_) for s_ in seasons]
+    roles = sorted(sh[seasons[0]], key=int)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(9.0, 3.4))
+    for i, r in enumerate(roles):
+        a1.plot(x, [sh[s_][r] for s_ in seasons], marker="o", ms=3, color=f"C{i}", label=t(ROLE[r]))
+    a1.set_ylim(0, None)
+    a1.set_xlabel(t("Season")); a1.set_ylabel(t("Share of minutes"))
+    a1.set_title("a", loc="left", fontweight="bold")
+    h = rt["ham_degisken_egilimi"]["3PAr"]
+    for i, r in enumerate(roles):
+        ss = h["rol"][r]["sezon"]
+        a2.plot([int(k) for k in sorted(ss, key=int)], [ss[k] for k in sorted(ss, key=int)], marker="o", ms=3, color=f"C{i}")
+    lg = h["lig_sezon"]
+    a2.plot([int(k) for k in sorted(lg, key=int)], [lg[k] for k in sorted(lg, key=int)], "k--", lw=1.2, label=t("League"))
+    a2.set_xlabel(t("Season")); a2.set_ylabel(t("3-pt attempt rate"))
+    a2.set_title("b", loc="left", fontweight="bold")
+    h1, l1 = a1.get_legend_handles_labels(); h2, l2 = a2.get_legend_handles_labels()
+    fig.legend(h1 + h2, l1 + l2, frameon=False, fontsize=8, ncol=len(roles) + 1, loc="upper center", bbox_to_anchor=(0.5, 1.02))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(FIG / "fig6_trends.png", dpi=300)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--lang", default="en", choices=["en", "tr"])
@@ -184,6 +212,6 @@ if __name__ == "__main__":
     if LANG == "tr":
         FIG = HERE.parents[1] / "manuscript_tr" / "figures"
     FIG.mkdir(parents=True, exist_ok=True)
-    for f in (fig1, fig2, fig3, fig4, fig5):
+    for f in (fig1, fig2, fig3, fig4, fig5, fig6):
         f()
     print("→", sorted(p.name for p in FIG.glob("*.png")))

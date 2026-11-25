@@ -41,6 +41,7 @@ def share(role_name, pos, F=None, names=None):
 JM = FM["jaccard_kume"]
 stable_roles = sum(j >= 0.75 for j in JM)
 weakest = min(range(len(JM)), key=lambda i: JM[i]) + 1
+RT = R["role_trends"]; KT = RT[f"K{KM}"]; H3 = RT["ham_degisken_egilimi"]
 P = MM["guc"]
 pair = " × ".join(ROLE[str(i)].lower() for i in P["cift"])
 def _term(t):
@@ -59,10 +60,10 @@ f"**Methods:** All EuroLeague games from 2016–17 to 2024–25 ({n(A['games'])}
 f"Role variables (possession shares with on-court denominators, shot profile and assist-network indicators) were clustered with Gaussian mixture models in {n(RF['fit_N'])} player-seasons; the number of roles was chosen by player-level bootstrap stability. "
 f"Role composition was tested against lineup net rating out of time (training 2016–2022, test 2023–2024), with regularised adjusted plus-minus (RAPM) controlling for player quality, a role-label permutation test, leakage checks and a power simulation. "
 f"**Results:** Four roles were retained (mean bootstrap Jaccard {f2(FM['jaccard_ort'])}); a five-role solution was nearly as stable ({f2(FA['jaccard_ort'])}), whereas six or more roles were unstable, as was a previously used seven-cluster solution ({f2(A['thesis_ward7_jaccard_mean'])}). "
-f"Ball handlers and rim protectors were {pct(share('Ball handler', 'Guard'))} guards and {pct(share('Rim protector', 'Center'))} centres, whereas interior bigs combined centres and forwards (Cramér's V = {f2(FM['cramers_v'])}). "
+f"Ball handlers and rim protectors were {pct(share('Ball handler', 'Guard'))} guards and {pct(share('Rim protector', 'Center'))} centres, whereas interior bigs combined centres and forwards (Cramér's V = {f2(FM['cramers_v'])}). From 2016 to 2024, role shares and the role–position association showed no trend and {pct(KT['ayni_rolde_kalma'])} of players kept their role between seasons, although the league's three-point attempt rate rose from {f2(H3['3PAr']['lig_2016'])} to {f2(H3['3PAr']['lig_son'])}. "
 f"With roles estimated in each season, role counts improved out-of-time prediction beyond RAPM (permutation p {fp(DM['sayilar_p'])}), but no positive gain remained in three leakage checks, including restricting test-season roles to information available in training (gain {pp3(LK['onceki_rol']['sayilar_kazanc'])} percentage points, 95% CI {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][0])} to {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][1])}). "
 f"Pairwise role terms added no detectable information; power was {pct(P['guc']['1.0'])} for a synergy of 1 point and {pct(P['guc']['2.0'])} for 2 points per 100 possessions for the most common pairing. "
-f"**Conclusions:** Four to five functional roles can be recovered reproducibly from open EuroLeague data and are useful for describing players. There was no robust evidence that role composition adds to lineup performance beyond individual player quality, and synergies smaller than about two points per 100 possessions could be neither detected nor excluded.")
+f"**Conclusions:** Four to five functional roles can be recovered reproducibly from open EuroLeague data, their relative structure was stable over nine seasons, and they are useful for describing players. There was no robust evidence that role composition adds to lineup performance beyond individual player quality, and synergies smaller than about two points per 100 possessions could be neither detected nor excluded.")
 ```
 
 {{< include sections/introduction.qmd >}}

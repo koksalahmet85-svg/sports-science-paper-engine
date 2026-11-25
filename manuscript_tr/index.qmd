@@ -36,6 +36,8 @@ def share(role_name, pos, F=None, names=None):
 JM = FM["jaccard_kume"]
 stable_roles = sum(j >= 0.75 for j in JM)
 weakest = min(range(len(JM)), key=lambda i: JM[i]) + 1
+RT = R["role_trends"]; KT = RT[f"K{KM}"]; H3 = RT["ham_degisken_egilimi"]
+rid = {v: k for k, v in ROLE_EN.items()}
 P = MM["guc"]
 pair = " × ".join(ROLE[str(i)].lower() for i in P["cift"])
 ```
@@ -49,10 +51,10 @@ f"**Yöntem:** 2016–17 ile 2024–25 arasındaki tüm EuroLeague maçları ({n
 f"Rol değişkenleri (sahadaki paydalarla hesaplanan hücum payları, şut profili ve asist ağı göstergeleri) {n(RF['fit_N'])} oyuncu-sezonda Gauss karışım modelleriyle kümelenmiş; rol sayısı oyuncu düzeyinde bootstrap kararlılığına göre seçilmiştir. "
 f"Rol bileşimi, dizilim net rating'ine karşı örneklem dışı olarak (eğitim 2016–2022, test 2023–2024) sınanmış; oyuncu kalitesi düzenlileştirilmiş düzeltilmiş artı-eksi (RAPM) ile kontrol edilmiş, rol etiketi permütasyon testi, sızıntı denetimleri ve güç simülasyonu uygulanmıştır. "
 f"**Bulgular:** Dört rol seçilmiştir (ortalama bootstrap Jaccard {f2(FM['jaccard_ort'])}); beş rollü çözüm neredeyse aynı kararlılıktadır ({f2(FA['jaccard_ort'])}), altı ve daha fazla rol ise daha önce kullanılan yedi kümeli çözüm ({f2(A['thesis_ward7_jaccard_mean'])}) gibi kararsızdır. "
-f"Top taşıyıcılarda guard oranı {pct(share('Ball handler', 'Guard'))}, pota koruyucularda pivot oranı {pct(share('Rim protector', 'Center'))} iken iç uzunlar pivot ve forvetleri birleştirmektedir (Cramér V = {f2(FM['cramers_v'])}). "
+f"Top taşıyıcılarda guard oranı {pct(share('Ball handler', 'Guard'))}, pota koruyucularda pivot oranı {pct(share('Rim protector', 'Center'))} iken iç uzunlar pivot ve forvetleri birleştirmektedir (Cramér V = {f2(FM['cramers_v'])}). 2016–2024 arasında rol paylarında ve rol–pozisyon ilişkisinde eğilim görülmemiş, oyuncuların {pct(KT['ayni_rolde_kalma'])} kadarı sezonlar arasında rolünü korumuş; ligin üçlük deneme oranı ise {f2(H3['3PAr']['lig_2016'])} değerinden {f2(H3['3PAr']['lig_son'])} değerine yükselmiştir. "
 f"Roller her sezon kendi verisiyle belirlendiğinde rol sayıları RAPM'in ötesinde örneklem dışı öngörüyü iyileştirmiştir (permütasyon p {fp(DM['sayilar_p'])}); ancak test sezonu rollerinin yalnızca eğitim döneminde bilinen bilgiyle verildiği denetim dahil üç sızıntı denetiminin hiçbirinde pozitif kazanç kalmamıştır (kazanç {pp3(LK['onceki_rol']['sayilar_kazanc'])} yüzde puan, %95 GA {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][0])} ile {pp3(LK['onceki_rol']['sayilar_kazanc_GA95'][1])}). "
 f"İkili rol terimleri saptanabilir bir bilgi eklememiştir; en sık rol eşleşmesi için güç, 100 hücumda 1 sayılık sinerjide {pct(P['guc']['1.0'])}, 2 sayılık sinerjide {pct(P['guc']['2.0'])} olmuştur. "
-f"**Sonuç:** Açık EuroLeague verisinden dört-beş işlevsel rol yeniden üretilebilir biçimde elde edilebilmektedir ve bu roller oyuncuları betimlemek için yararlıdır. Rol bileşiminin dizilim performansına bireysel oyuncu kalitesinin ötesinde katkı yaptığına dair sağlam bir kanıt bulunamamış; 100 hücumda yaklaşık iki sayıdan küçük sinerjiler ne saptanabilmiş ne de dışlanabilmiştir.")
+f"**Sonuç:** Açık EuroLeague verisinden dört-beş işlevsel rol yeniden üretilebilir biçimde elde edilebilmekte, rollerin göreli yapısı dokuz sezon boyunca kararlı kalmakta ve bu roller oyuncuları betimlemek için yararlı olmaktadır. Rol bileşiminin dizilim performansına bireysel oyuncu kalitesinin ötesinde katkı yaptığına dair sağlam bir kanıt bulunamamış; 100 hücumda yaklaşık iki sayıdan küçük sinerjiler ne saptanabilmiş ne de dışlanabilmiştir.")
 ```
 
 {{< include sections/introduction.qmd >}}

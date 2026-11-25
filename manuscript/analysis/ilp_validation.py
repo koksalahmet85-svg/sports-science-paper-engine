@@ -43,8 +43,8 @@ _N = json.loads((Path(__file__).parent / ("role_names.json" if K_ROLES == 5 else
 BALLH = {int(k) for k, v in _N.items() if v == "Ball handler"}
 RIMP = {int(k) for k, v in _N.items() if v == "Rim protector"}
 BIGS = RIMP | {int(k) for k, v in _N.items() if v == "Interior big"}
-METRICS = ["PIR40_sezon", "VAL40_sezon", "PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]
-COMMON = ["PIR40_havuz", "VAL40_havuz", "RAPM", "DAKIKA"]   # ortak alt küme: hepsinin tanımlı olduğu segmentler
+METRICS = ["PIR40_sezon", "VAL40_sezon", "PIR40_havuz", "VAL40_havuz", "PIR40_rol", "RAPM", "DAKIKA"]
+COMMON = ["PIR40_havuz", "VAL40_havuz", "PIR40_rol", "RAPM", "DAKIKA"]   # ortak alt küme: hepsinin tanımlı olduğu segmentler
 
 
 def val40(d: pd.DataFrame) -> pd.Series:
@@ -101,6 +101,14 @@ def main() -> None:
                 for p in set(te["LA"].explode()) | set(te["LB"].explode()) | set(pg_first["Player_ID"])}
         value = {"PIR40_sezon": pir40(pg_first).dropna().to_dict(), "PIR40_havuz": pir40(pg_pool).dropna().to_dict(), "VAL40_sezon": val40(pg_first).dropna().to_dict(), "VAL40_havuz": val40(pg_pool).dropna().to_dict(),
                  "RAPM": rapm, "DAKIKA": pg_first.groupby("Player_ID")["MIN"].sum().to_dict()}
+        # Role göre düzeltilmiş PIR40 (havuz): önceki-sezon rolü (yeni oyuncuda o sezonun rolü) ortalamasından sapma
+        ph = pir40(pg_pool).dropna()
+        mh = pg_pool.groupby("Player_ID")["MIN"].sum()
+        cur = [p_ for p_ in pg_first["Player_ID"].unique() if p_ in ph.index]
+        rr_ = pd.DataFrame({"pir": ph.reindex(cur), "m": mh.reindex(cur),
+                            "rol": [prev_role.get((p_, s)) for p_ in cur]}, index=cur).dropna()
+        rmean = rr_.groupby("rol").apply(lambda g: np.average(g["pir"], weights=g["m"]), include_groups=False)
+        value["PIR40_rol"] = (rr_["pir"] - rr_["rol"].map(rmean)).to_dict()
 
         # Sınama 2: takım başına ILP beşlisi
         mins = pg_first.groupby(["Team", "Player_ID"])["MIN"].sum().reset_index()
@@ -111,7 +119,7 @@ def main() -> None:
             n_all += len(ids)
             n_cur += sum(1 for p in ids if (p, s) in prev_role and all(x[0] != p or x[1] >= s for x in ()) and
                          prev_role[(p, s)] == role.get((p, s)) and not any((p, s2) in role for s2 in range(2016, s)))
-            for metric in ("PIR40_sezon", "VAL40_sezon", "RAPM", "DAKIKA"):  # DAKIKA: en çok süre alan beşli (taban)
+            for metric in ("PIR40_sezon", "VAL40_sezon", "PIR40_rol", "RAPM", "DAKIKA"):  # DAKIKA: en çok süre alan beşli (taban)
                 v = np.array([value[metric].get(p, np.nan) for p in ids])
                 ok = ~np.isnan(v)
                 for rule in ("yok", "tez", "dengeli"):

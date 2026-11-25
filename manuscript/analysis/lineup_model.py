@@ -149,6 +149,19 @@ def main() -> None:
         return (s_("LA") - s_("LB")).reshape(-1, 1)
 
     pirm = Ridge(alpha=1e-6).fit(pirsum(tr), tr["y"], sample_weight=tr["poss"])
+    # Role göre düzeltilmiş PIR40: eğitim dönemindeki ana rolün (dakika ağırlıklı) PIR40 ortalamasından sapma
+    rmain = (roles[["Player_ID", "Season", "Arketip"]].merge(ps[["Player_ID", "Season", "MIN"]], on=["Player_ID", "Season"])
+             .query("Season <= 2022").groupby(["Player_ID", "Arketip"])["MIN"].sum().reset_index()
+             .sort_values("MIN").groupby("Player_ID").tail(1).set_index("Player_ID")["Arketip"])
+    pr = pd.DataFrame({"pir": pir, "m": pg_tr["MIN"], "rol": rmain}).dropna(subset=["pir"])
+    rm = pr.dropna(subset=["rol"]).groupby("rol").apply(lambda g: np.average(g["pir"], weights=g["m"]), include_groups=False)
+    pir_adj = (pr["pir"] - pr["rol"].map(rm).fillna(pmean)).to_dict()
+
+    def piradj_sum(d):
+        s_ = lambda col: np.array([sum(pir_adj.get(p, 0.0) for p in lu) for lu in d[col]])
+        return (s_("LA") - s_("LB")).reshape(-1, 1)
+
+    padjm = Ridge(alpha=1e-6).fit(piradj_sum(tr), tr["y"], sample_weight=tr["poss"])
     yte, wte = te["y"].values, te["poss"].values
     base = float(np.average(tr["y"], weights=tr["poss"]))
 
@@ -205,15 +218,18 @@ def main() -> None:
               "ciftler_ek_kazanc": round(float(gain - gain_counts), 5),
               "ciftler_ek_GA95": [round(float(x), 5) for x in np.percentile(inc, [2.5, 97.5])]}
     # test maçları yeniden örneklenerek R² farklarının %95 GA'sı
-    preds = {"RAPM": p_rapm_te, "VAL40": val.predict(valsum(te)), "PIR40": pirm.predict(pirsum(te))}
+    preds = {"RAPM": p_rapm_te, "VAL40": val.predict(valsum(te)), "PIR40": pirm.predict(pirsum(te)),
+             "PIR40_rol": padjm.predict(piradj_sum(te))}
     g_idx = {g: np.where(te["game"].values == g)[0] for g in te["game"].unique()}
     games = np.array(list(g_idx))
-    boot = {kk: [] for kk in ("RAPM-VAL40", "RAPM-PIR40")}
+    boot = {kk: [] for kk in ("RAPM-VAL40", "RAPM-PIR40", "RAPM-PIR40_rol", "PIR40_rol-PIR40")}
     for _ in range(500):
         ii = np.concatenate([g_idx[g] for g in rng.choice(games, len(games))])
         r = {kk: wr2(yte[ii], v[ii], wte[ii]) for kk, v in preds.items()}
         boot["RAPM-VAL40"].append(r["RAPM"] - r["VAL40"])
         boot["RAPM-PIR40"].append(r["RAPM"] - r["PIR40"])
+        boot["RAPM-PIR40_rol"].append(r["RAPM"] - r["PIR40_rol"])
+        boot["PIR40_rol-PIR40"].append(r["PIR40_rol"] - r["PIR40"])
     r2_ci = {kk: [round(float(x), 5) for x in np.percentile(v, [2.5, 97.5])] for kk, v in boot.items()}
     null = np.array([comp_gain(permuted())[0] for _ in range(a.B)])
     pd.DataFrame({"kazanc": null}).to_csv(PROC / f"lineup_null_{tag}.csv", index=False)
@@ -347,6 +363,7 @@ def main() -> None:
         "test_R2": {"sabit": round(float(wr2(yte, np.full(len(te), base), wte)), 5),
                     "VAL40_toplami": round(float(wr2(yte, val.predict(valsum(te)), wte)), 5),
                     "PIR40_toplami": round(float(wr2(yte, pirm.predict(pirsum(te)), wte)), 5),
+                    "PIR40_rol_toplami": round(float(wr2(yte, padjm.predict(piradj_sum(te)), wte)), 5),
                     "fark_GA95": r2_ci,
                     "RAPM": round(float(r2_rapm), 5), "RAPM_rol_bilesimi": round(float(r2_comp), 5)},
         "rol_bilesimi": {"kazanc": round(float(gain), 5), "B": a.B, "ceza_cv": comp_cv, "ceza": comp_alpha,
