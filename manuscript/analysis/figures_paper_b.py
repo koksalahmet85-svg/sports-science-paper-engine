@@ -24,14 +24,17 @@ KM = R["roles_final"]["K"]
 ROLE_NAMES = json.loads((HERE / ("role_names.json" if KM == 5 else f"role_names_K{KM}.json")).read_text())
 METRIC = {"PIR40": "PIR per 40 min", "VAL40": "VAL per 40 min", "RAPM": "RAPM"}
 SLOPE = {"PIR40_sezon": "PIR40 (first half)", "VAL40_sezon": "VAL40 (first half)", "PIR40_havuz": "PIR40 (all prior data)",
-         "VAL40_havuz": "VAL40 (all prior data)", "RAPM": "RAPM (all prior data)", "DAKIKA": "Minutes (first half)"}
+         "VAL40_havuz": "VAL40 (all prior data)", "PIR40_rol": "Role-adjusted PIR40 (all prior data)",
+         "RAPM": "RAPM (all prior data)", "DAKIKA": "Minutes (first half)"}
 RULE = {"yok": "no constraint", "tez": "≥ 1 rim protector", "dengeli": "balanced"}
-SEL = {"DAKIKA": "Most-used players", "PIR40_sezon": "ILP on PIR40", "VAL40_sezon": "ILP on VAL40", "RAPM": "ILP on RAPM"}
+SEL = {"DAKIKA": "Most-used players", "PIR40_sezon": "ILP on PIR40", "VAL40_sezon": "ILP on VAL40",
+       "PIR40_rol": "ILP on role-adjusted PIR40", "RAPM": "ILP on RAPM"}
 TR = {
     "PIR per 40 min": "40 dakikada PIR", "VAL per 40 min": "40 dakikada VAL",
     "PIR40 (first half)": "PIR40 (ilk yarı)", "VAL40 (first half)": "VAL40 (ilk yarı)",
     "PIR40 (all prior data)": "PIR40 (tüm önceki veri)", "VAL40 (all prior data)": "VAL40 (tüm önceki veri)",
-    "RAPM (all prior data)": "RAPM (tüm önceki veri)", "Minutes (first half)": "Dakika (ilk yarı)",
+    "RAPM (all prior data)": "RAPM (tüm önceki veri)", "Role-adjusted PIR40 (all prior data)": "Role göre düzeltilmiş PIR40 (tüm önceki veri)",
+    "ILP on role-adjusted PIR40": "Role göre düzeltilmiş PIR40 ile ILP", "Minutes (first half)": "Dakika (ilk yarı)",
     "no constraint": "kısıtsız", "≥ 1 rim protector": "≥ 1 pota koruyucu", "balanced": "dengeli",
     "ILP on PIR40": "PIR40 ile ILP", "ILP on VAL40": "VAL40 ile ILP", "ILP on RAPM": "RAPM ile ILP",
     "Mean z-score across players": "Oyuncular arası ortalama z-skoru",
