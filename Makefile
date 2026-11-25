@@ -21,7 +21,7 @@ formula-test:       ## OPEN_QUESTIONS #2: 4 varyant × 1000 permütasyon
 
 paper-a:            ## Makale A'nın tüm sayıları (data hedefinden sonra; ~60 dk)
 	python -m engine.data.shot_profile && python -m engine.data.bio && python -m engine.data.advanced && python -m engine.data.assist_network
-	cd manuscript/analysis && python thesis_archetypes.py && python roles_final.py \
+	cd manuscript/analysis && python thesis_archetypes.py && python roles_final.py && python role_trends.py \
 	  && python role_position.py \
 	  && python lineup_model.py --roles roles_final_K5.csv --power 100 \
 	  && python lineup_model.py --roles roles_final_K4.csv \
