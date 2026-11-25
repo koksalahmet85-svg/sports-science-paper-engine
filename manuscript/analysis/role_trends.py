@@ -99,15 +99,23 @@ def main() -> None:
     trend = {}
     for v in RAW:
         lig = raw.groupby("Season").apply(lambda g: np.average(g[v].fillna(g[v].mean()), weights=g["MIN"]), include_groups=False)
+        rows_all = raw.groupby("Player_ID").indices
+        pall = list(rows_all)
+        lb = []
+        for _ in range(500):
+            rr_ = raw.iloc[np.concatenate([rows_all[p_] for p_ in rng.choice(pall, len(pall))])]
+            ll = rr_.groupby("Season").apply(lambda g: np.average(g[v].fillna(g[v].mean()), weights=g["MIN"]), include_groups=False)
+            lb.append(slope(ll.index.to_numpy(float), ll.to_numpy()))
         trend[v] = {"lig_2016": round(float(lig.iloc[0]), 3), "lig_son": round(float(lig.iloc[-1]), 3),
                     "lig_egim": round(slope(lig.index.to_numpy(float), lig.to_numpy()), 4),
+                    "lig_egim_GA95": [round(float(x), 4) for x in np.percentile(lb, [2.5, 97.5])], "B_ham": 500,
                     "rol": {}}
         for rr, g in raw.groupby("Arketip"):
             m = g.groupby("Season").apply(lambda h: np.average(h[v].fillna(h[v].mean()), weights=h["MIN"]), include_groups=False)
             bs = []
             rows_g = g.groupby("Player_ID").indices
             pl = list(rows_g)
-            for _ in range(200):
+            for _ in range(500):
                 gg = g.iloc[np.concatenate([rows_g[p_] for p_ in rng.choice(pl, len(pl))])]
                 mm = gg.groupby("Season").apply(lambda h: np.average(h[v].fillna(h[v].mean()), weights=h["MIN"]), include_groups=False)
                 bs.append(slope(mm.index.to_numpy(float), mm.to_numpy()))
